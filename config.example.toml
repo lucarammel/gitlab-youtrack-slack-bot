@@ -18,3 +18,12 @@ include_drafts = true
 
 # Restrict which to-do types are forwarded (comment out to get all of them):
 # todo_actions = ["mentioned", "directly_addressed", "review_requested", "assigned", "build_failed", "approval_required", "unmergeable"]
+
+# --- YouTrack (enabled when YOUTRACK_TOKEN is set) ---
+youtrack_url = "https://youtrack.example.com"
+notify_youtrack = true
+# Issues that "concern you": comments, new issues and field changes on these are forwarded.
+# Mentions (@you in a comment) and assignments to you are always forwarded, on any issue.
+youtrack_query = "for: me or reporter: me or commenter: me or tag: Star"
+# Field changes to report on those issues:
+youtrack_fields = ["State", "Priority"]

@@ -5,6 +5,7 @@ Sources:
   - GitLab To-Do list: mentions, review requests, assignments, failed pipelines, ...
   - New merge requests on watched projects.
   - New comments / approvals on your own open merge requests.
+  - YouTrack: mentions, assignments, comments / field changes on issues that concern you.
 
 Stdlib only. Config in config.toml, secrets in environment variables.
 """
@@ -84,6 +85,30 @@ def to_plain(text: str) -> str:
     """Workflow Builder variables don't render <url|label> links: turn them into 'label (url)'."""
     text = re.sub(r"<([^|>]+)\|([^>]*)>", r"\2 (\1)", text)
     return text.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
+
+
+class YouTrack:
+    def __init__(self, base_url: str, token: str):
+        self.base = base_url.rstrip("/")
+        self.headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+
+    def get(self, path: str, **params) -> list | dict:
+        """GET with $skip/$top pagination for list endpoints."""
+        top = 200
+        out: list = []
+        skip = 0
+        while True:
+            q = {**params, "$top": top, "$skip": skip}
+            data, _ = http_json(f"{self.base}/api{path}?{urllib.parse.urlencode(q)}", headers=self.headers)
+            if not isinstance(data, list):
+                return data
+            out.extend(data)
+            if len(data) < top:
+                return out
+            skip += top
+
+    def issue_url(self, issue_id: str) -> str:
+        return f"{self.base}/issue/{issue_id}"
 
 
 class Slack:
@@ -285,10 +310,101 @@ def collect_my_mr_activity(gl: GitLab, state: dict, cfg: dict, me: dict) -> list
     return msgs
 
 
+YT_ACTIVITY_FIELDS = (
+    "id,timestamp,author(login,fullName),category(id),field(presentation),"
+    "target(idReadable,summary,text,issue(idReadable,summary)),"
+    "added(id,name,login,fullName,text,presentation),removed(name,login,fullName,presentation)"
+)
+YT_DEFAULT_QUERY = "for: me or reporter: me or commenter: me or tag: Star"
+
+
+def yt_value(v) -> str:
+    if isinstance(v, dict):
+        return v.get("fullName") or v.get("name") or v.get("presentation") or v.get("login") or "?"
+    return str(v)
+
+
+def yt_values(vals) -> str:
+    if vals is None:
+        return "∅"
+    if not isinstance(vals, list):
+        vals = [vals]
+    return ", ".join(yt_value(v) for v in vals) or "∅"
+
+
+def collect_youtrack(yt: YouTrack, state: dict, cfg: dict) -> list[str]:
+    since = since_with_margin(state)
+    if not since:
+        return []
+    me = yt.get("/users/me", fields="login,fullName")
+    login = me["login"]
+    start_ms = int(datetime.fromisoformat(since).timestamp() * 1000)
+    acts = yt.get(
+        "/activities",
+        categories="CommentsCategory,CustomFieldCategory,IssueCreatedCategory",
+        start=start_ms,
+        fields=YT_ACTIVITY_FIELDS,
+    )
+    seen_list = state.get("yt_activity_ids", [])
+    seen = set(seen_list)
+    acts = [a for a in sorted(acts, key=lambda a: a["timestamp"]) if a["id"] not in seen]
+    for a in acts:
+        seen_list.append(a["id"])
+    state["yt_activity_ids"] = seen_list[-2000:]
+    acts = [a for a in acts if (a.get("author") or {}).get("login") != login]
+    if not acts:
+        return []
+
+    def issue_of(a: dict) -> dict:
+        t = a.get("target") or {}
+        return t.get("issue") or t
+
+    # Which of the touched issues "concern me" according to youtrack_query?
+    ids = sorted({issue_of(a).get("idReadable") for a in acts} - {None})
+    query = cfg.get("youtrack_query") or YT_DEFAULT_QUERY
+    mine = {
+        i["idReadable"]
+        for i in yt.get("/issues", query=f"({query}) and issue id: {', '.join(ids)}", fields="idReadable")
+    } if ids else set()
+    fields_wanted = set(cfg.get("youtrack_fields") or ["State", "Priority"])
+
+    msgs = []
+    for a in acts:
+        issue = issue_of(a)
+        iid = issue.get("idReadable")
+        if not iid:
+            continue
+        who = esc((a.get("author") or {}).get("fullName") or "someone")
+        ilink = link(yt.issue_url(iid), f"{iid} {issue.get('summary', '')}".strip())
+        cat = (a.get("category") or {}).get("id")
+        if cat == "CommentsCategory":
+            for c in a.get("added") or []:
+                text = c.get("text") or ""
+                if f"@{login}" in text:
+                    msgs.append(f"*:speech_balloon: Mentioned* by {who} (YouTrack)\n{ilink}\n> {snippet(text)}")
+                elif iid in mine:
+                    msgs.append(f"*:speech_balloon: Comment* by {who} (YouTrack)\n{ilink}\n> {snippet(text)}")
+        elif cat == "CustomFieldCategory":
+            fname = (a.get("field") or {}).get("presentation") or ""
+            added = a.get("added") or []
+            if fname == "Assignee" and any(v.get("login") == login for v in added if isinstance(v, dict)):
+                msgs.append(f"*:bust_in_silhouette: Assigned to you* by {who} (YouTrack)\n{ilink}")
+            elif iid in mine and fname in fields_wanted:
+                msgs.append(
+                    f"*:arrows_counterclockwise: {esc(fname)}*: {esc(yt_values(a.get('removed')))} → "
+                    f"{esc(yt_values(added))} by {who} (YouTrack)\n{ilink}"
+                )
+        elif cat == "IssueCreatedCategory" and iid in mine:
+            msgs.append(f"*:new: New issue* by {who} (YouTrack)\n{ilink}")
+    return msgs
+
+
 # --------------------------------------------------------------------------- #
 # Main
 # --------------------------------------------------------------------------- #
-def run_once(gl: GitLab, slack: Slack, cfg: dict, state_path: Path, dry_run: bool) -> None:
+def run_once(
+    gl: GitLab, yt: YouTrack | None, slack: Slack, cfg: dict, state_path: Path, dry_run: bool
+) -> None:
     state = load_state(state_path)
     first_run = "last_run" not in state
     started = now_iso()
@@ -301,6 +417,8 @@ def run_once(gl: GitLab, slack: Slack, cfg: dict, state_path: Path, dry_run: boo
         msgs += collect_new_mrs(gl, state, cfg, me)
     if cfg.get("notify_my_mr_activity", True):
         msgs += collect_my_mr_activity(gl, state, cfg, me)
+    if yt and cfg.get("notify_youtrack", True):
+        msgs += collect_youtrack(yt, state, cfg)
 
     if first_run:
         print(f"First run: recorded {len(msgs)} existing item(s) as seen, nothing sent.")
@@ -331,6 +449,8 @@ def main() -> None:
     cfg = tomllib.loads(args.config.read_text())
     token = os.environ.get("GITLAB_TOKEN") or sys.exit("Set GITLAB_TOKEN (scope: read_api).")
     gl = GitLab(cfg["gitlab_url"], token)
+    yt_token = os.environ.get("YOUTRACK_TOKEN")
+    yt = YouTrack(cfg["youtrack_url"], yt_token) if yt_token and cfg.get("youtrack_url") else None
     slack = Slack(
         os.environ.get("SLACK_WEBHOOK_URL"),
         os.environ.get("SLACK_BOT_TOKEN"),
@@ -348,7 +468,7 @@ def main() -> None:
 
     while True:
         try:
-            run_once(gl, slack, cfg, args.state, args.dry_run)
+            run_once(gl, yt, slack, cfg, args.state, args.dry_run)
         except (urllib.error.URLError, RuntimeError) as e:
             print(f"[{now_iso()}] error: {e}", file=sys.stderr)
             if not args.loop:

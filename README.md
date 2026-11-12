@@ -4,6 +4,8 @@ Polls GitLab and posts to a Slack conversation when:
 - something lands in your GitLab To-Do list (mention, review request, assignment, failed pipeline, ...)
 - a new MR is opened on a watched project
 - someone comments on / approves / merges one of your MRs
+- YouTrack (optional): you're mentioned or assigned, or an issue that concerns you gets a comment,
+  a State/Priority change, or is created
 
 Polling (not GitLab webhooks) so it works from a laptop behind the VPN. Python 3.11+, no dependencies.
 
@@ -26,7 +28,9 @@ Polling (not GitLab webhooks) so it works from a laptop behind the VPN. Python 3
      Links show up as `title (url)` because workflow variables don't render Slack link markup.
      If `--test-slack` fails with `workflow_not_published`, (re)publish the workflow — any edit
      after publishing needs a new publish.
-3. Configure:
+3. **YouTrack token** (optional): YouTrack → Profile → Account Security → *New token* (scope YouTrack)
+   → `YOUTRACK_TOKEN` in `.env`. Tune `youtrack_query` / `youtrack_fields` in `config.toml`.
+4. Configure:
    ```sh
    cp config.example.toml config.toml   # edit projects / channel
    cp .env.example .env                 # fill in tokens
