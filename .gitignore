@@ -1,0 +1,5 @@
+config.toml
+.env
+state.json
+state.tmp
+*.log

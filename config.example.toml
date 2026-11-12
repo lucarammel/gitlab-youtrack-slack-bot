@@ -1,0 +1,20 @@
+gitlab_url = "https://gitlab.example.com"
+
+# Slack channel ID (C…), or your own user ID (U…) to get a DM from the bot.
+# Ignored when SLACK_WEBHOOK_URL is used (the webhook decides the channel).
+slack_channel = ""
+
+# Projects to watch for new MRs (full path or numeric ID).
+watched_projects = [
+  "my-group/my-subgroup/my-project",
+]
+
+notify_todos = true            # mentions, review requests, assignments, failed pipelines...
+notify_new_mrs = true          # new MRs on watched_projects
+notify_my_mr_activity = true   # comments / approvals / merge on MRs you authored
+
+include_own_mrs = false
+include_drafts = true
+
+# Restrict which to-do types are forwarded (comment out to get all of them):
+# todo_actions = ["mentioned", "directly_addressed", "review_requested", "assigned", "build_failed", "approval_required", "unmergeable"]
