@@ -1,0 +1,13 @@
+[Unit]
+Description=GitLab -> Slack notifier
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=%h/repos/gitlab-slack-notifier
+ExecStart=/bin/sh -c '. ./.env && exec /usr/bin/python3 -u notifier.py --loop 120'
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=default.target

@@ -20,20 +20,52 @@ Polling (not GitLab webhooks) so it works from a laptop behind the VPN. Python 3
      2. *Set up variables* → add a variable named `text` (type: Text).
      3. Add step *Messages → Send a message to a person* (pick yourself) or *to a channel*;
         message body = the `text` variable.
-     4. Publish, copy the `https://hooks.slack.com/triggers/…` URL into `SLACK_WORKFLOW_URL`.
+     4. **Publish**, copy the `https://hooks.slack.com/triggers/…` URL into `SLACK_WORKFLOW_URL`
+        (a `/triggers/` URL in `SLACK_WEBHOOK_URL` is detected and works too).
 
      Links show up as `title (url)` because workflow variables don't render Slack link markup.
+     If `--test-slack` fails with `workflow_not_published`, (re)publish the workflow — any edit
+     after publishing needs a new publish.
 3. Configure:
    ```sh
    cp config.example.toml config.toml   # edit projects / channel
    cp .env.example .env                 # fill in tokens
-   source .env
+   set -a; . ./.env; set +a
    ./notifier.py --test-slack           # checks Slack
    ./notifier.py --dry-run              # checks GitLab, prints instead of posting
    ./notifier.py                        # first real run: records existing items, sends nothing
    ```
 
 ## Running
+
+### Start automatically with WSL / Linux (systemd user service — recommended)
+
+Requires systemd (on WSL: `[boot] systemd=true` in `/etc/wsl.conf`). The unit file
+[`gitlab-slack-notifier.service`](gitlab-slack-notifier.service) loads `.env` and runs
+`notifier.py --loop 120`, restarting on failure. It assumes the repo is at `~/repos/gitlab-slack-notifier`
+(edit `WorkingDirectory` otherwise).
+
+```sh
+mkdir -p ~/.config/systemd/user
+cp gitlab-slack-notifier.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now gitlab-slack-notifier
+loginctl enable-linger "$USER"   # start at boot, without an interactive login
+```
+
+Day-to-day:
+
+```sh
+journalctl --user -u gitlab-slack-notifier -f        # follow logs
+systemctl --user restart gitlab-slack-notifier       # after editing .env or config.toml
+systemctl --user stop gitlab-slack-notifier          # stop
+systemctl --user disable --now gitlab-slack-notifier # don't start at boot anymore
+```
+
+On WSL, the VM shuts down after a while with no WSL window open; the service starts again the
+next time WSL boots.
+
+### Alternatives
 
 - In a terminal / tmux: `./notifier.py --loop 120`
 - Cron (every 2 min): `*/2 * * * * cd ~/repos/gitlab-slack-notifier && . ./.env && ./notifier.py >> notifier.log 2>&1`
