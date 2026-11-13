@@ -1,4 +1,4 @@
-"""One polling cycle: collect -> enqueue in the outbox -> deliver -> save state."""
+"""One polling cycle: collect -> filter -> enqueue in the outbox -> deliver -> save state."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from .clients import GitLab, Slack, YouTrack
 from .collectors import COLLECTORS, Context
 from .config import Config
 from .delivery import Deliverer, is_quiet
+from .filters import NotificationFilter
 from .http import ApiError
 from .models import Notification
 from .state import State, now_iso
@@ -47,6 +48,7 @@ class Notifier:
         self.state_path = state_path
         self.dry_run = dry_run
         self.clock = clock
+        self.filter = NotificationFilter(cfg)
         post = self._print if dry_run else slack.post
         self.deliverer = deliverer or Deliverer(post, cfg, sleep=(lambda _: None) if dry_run else time.sleep)
 
@@ -68,6 +70,7 @@ class Notifier:
         if state.first_run:
             log.info("First run: recorded %d existing item(s) as seen, nothing sent.", len(fresh))
             fresh = []
+        fresh = self.filter.apply(fresh)
 
         if morning.due(state, self.cfg, now):
             held = len(state.outbox) + len(fresh) if is_quiet(now, self.cfg) else 0

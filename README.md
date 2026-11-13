@@ -16,6 +16,7 @@ Delivery features (see comments in `config.example.toml`):
   delivered when the quiet period ends; `quiet_bypass` lets urgent kinds through.
 - **Digest**: when `batch_threshold` or more notifications are pending at once (after quiet hours,
   after a laptop resume…), they are merged into a single message instead of flooding the channel.
+- **Ignore rules**: `ignore_authors` (bots…), `ignore_title_patterns` (regexes), `muted_kinds`.
 - **Reliable delivery**: notifications go through an outbox persisted in `state.json`; if Slack fails
   halfway, the rest is sent on the next run (no loss, no duplicates).
 - **Retries**: transient HTTP errors (429/5xx/timeouts) are retried with backoff.
@@ -95,13 +96,14 @@ next time WSL boots.
 notifier.py                      # entry point (also: python3 -m gitlab_slack_notifier)
 gitlab_slack_notifier/
   cli.py                         # argument parsing, main loop
-  runner.py                      # one cycle: collect → outbox → deliver → save state
+  runner.py                      # one cycle: collect → filter → outbox → deliver → save state
   config.py                      # typed Config (dataclass) + validation
   state.py                       # state.json: seen ids, outbox, last run
   models.py                      # Notification(kind, text, author, title)
   collectors/                    # one module per source, registered in collectors/__init__.py
     todos.py  new_mrs.py  my_mrs.py  youtrack.py
   delivery.py                    # quiet hours, digest composition, posting
+  filters.py                     # ignore rules
   morning.py                     # daily greeting
   clients/                       # GitLab, YouTrack, Slack API clients
   http.py                        # JSON over urllib, retries, ApiError

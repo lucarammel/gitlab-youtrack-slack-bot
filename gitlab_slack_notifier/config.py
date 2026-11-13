@@ -33,6 +33,11 @@ class Config:
     include_drafts: bool = True
     todo_actions: list[str] | None = None
 
+    # --- Filtering ---
+    ignore_authors: list[str] = field(default_factory=list)  # GitLab usernames / YouTrack logins
+    ignore_title_patterns: list[str] = field(default_factory=list)  # regexes, case-insensitive
+    muted_kinds: list[str] = field(default_factory=list)
+
     # --- YouTrack ---
     youtrack_url: str | None = None
     notify_youtrack: bool = True
@@ -52,6 +57,11 @@ class Config:
 
     def __post_init__(self) -> None:
         self.quiet_window  # validate early
+        for p in self.ignore_title_patterns:
+            try:
+                re.compile(p)
+            except re.error as e:
+                raise ConfigError(f"ignore_title_patterns: invalid regex {p!r}: {e}") from None
         if not 0 <= self.morning_hour <= 23:
             raise ConfigError("morning_hour must be between 0 and 23")
 

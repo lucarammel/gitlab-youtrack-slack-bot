@@ -53,6 +53,13 @@ class RunnerTest(unittest.TestCase):
         self.assertEqual(len(self.slack.sent), 1)
         self.assertIn("MR 2", self.slack.sent[0])
 
+    def test_ignore_rules(self):
+        self.notifier().run_once()
+        self.gl.todos = [todo(1, author="renovate"), todo(2, author="bob")]
+        self.notifier(ignore_authors=["renovate"]).run_once()
+        self.assertEqual(len(self.slack.sent), 1)
+        self.assertIn("Bob", self.slack.sent[0])
+
     def test_quiet_hours_hold_then_deliver(self):
         self.notifier().run_once()
         self.gl.todos = [todo(1)]

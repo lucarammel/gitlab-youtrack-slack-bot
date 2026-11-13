@@ -19,6 +19,16 @@ include_drafts = true
 # Restrict which to-do types are forwarded (comment out to get all of them):
 # todo_actions = ["mentioned", "directly_addressed", "review_requested", "assigned", "build_failed", "approval_required", "unmergeable"]
 
+# --- Filtering ---
+# Drop notifications from these authors (GitLab usernames / YouTrack logins), e.g. bots:
+ignore_authors = []            # ["renovate-bot", "gitlab-bot"]
+# Drop notifications whose MR / issue title matches one of these regexes (case-insensitive):
+ignore_title_patterns = []     # ["^chore\\(deps\\)"]
+# Mute whole kinds: todo actions (mentioned, review_requested, build_failed...), new_mr, mr_comment,
+# mr_approved, mr_unapproved, mr_merged,
+# yt_mention, yt_assigned, yt_comment, yt_field, yt_new_issue
+muted_kinds = []
+
 # --- YouTrack (enabled when YOUTRACK_TOKEN is set) ---
 youtrack_url = "https://youtrack.example.com"
 notify_youtrack = true
@@ -37,8 +47,7 @@ morning_weekdays_only = true
 # Quiet hours (local time): notifications are held, then delivered when they end (as a digest if many).
 # quiet_hours = "19:00-08:30"
 quiet_weekends = false
-# Kinds delivered even during quiet hours: to-do actions (mentioned, review_requested, build_failed...),
-# new_mr, mr_comment, mr_approved, mr_unapproved, mr_merged, yt_mention, yt_assigned, yt_comment...
+# Kinds delivered even during quiet hours (see muted_kinds for the list):
 quiet_bypass = []              # ["review_requested", "directly_addressed"]
 # When at least this many notifications are pending at once, merge them into one digest (0 = never).
 batch_threshold = 5

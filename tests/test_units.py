@@ -3,6 +3,7 @@ from datetime import datetime
 
 from gitlab_slack_notifier.config import Config, ConfigError
 from gitlab_slack_notifier.delivery import Deliverer, compose, is_quiet
+from gitlab_slack_notifier.filters import NotificationFilter
 from gitlab_slack_notifier.formatting import mentions, to_plain
 from gitlab_slack_notifier.models import Notification
 
@@ -37,6 +38,10 @@ class ConfigTest(unittest.TestCase):
         with self.assertRaises(ConfigError):
             make_config(quiet_hours="7pm")
 
+    def test_invalid_regex(self):
+        with self.assertRaises(ConfigError):
+            make_config(ignore_title_patterns=["("])
+
 
 class QuietHoursTest(unittest.TestCase):
     def test_overnight_window(self):
@@ -49,6 +54,18 @@ class QuietHoursTest(unittest.TestCase):
     def test_weekends(self):
         self.assertTrue(is_quiet(SATURDAY_NOON, make_config(quiet_weekends=True)))
         self.assertFalse(is_quiet(SATURDAY_NOON, make_config()))
+
+
+class FilterTest(unittest.TestCase):
+    def test_rules(self):
+        f = NotificationFilter(
+            make_config(ignore_authors=["@Renovate-Bot"], ignore_title_patterns=[r"^chore\(deps\)"], muted_kinds=["new_mr"])
+        )
+        self.assertFalse(f.allows(n(author="renovate-bot")))
+        self.assertFalse(f.allows(n(title="chore(deps): bump x")))
+        self.assertFalse(f.allows(n(kind="new_mr")))
+        self.assertTrue(f.allows(n(author="alice", title="feat: x")))
+        self.assertTrue(f.allows(n(kind="morning")))
 
 
 class DeliveryTest(unittest.TestCase):

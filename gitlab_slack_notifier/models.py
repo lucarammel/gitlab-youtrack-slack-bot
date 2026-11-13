@@ -12,8 +12,8 @@ SYSTEM_KINDS = frozenset({"morning"})
 class Notification:
     kind: str  # e.g. "review_requested", "new_mr", "pipeline_success", "yt_comment", "morning"
     text: str  # Slack mrkdwn
-    author: str | None = None  # GitLab username / YouTrack login
-    title: str | None = None  # MR / issue title
+    author: str | None = None  # GitLab username / YouTrack login, used by ignore rules
+    title: str | None = None  # MR / issue title, used by ignore rules
 
     @property
     def is_system(self) -> bool:
