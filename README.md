@@ -52,10 +52,10 @@ Polling (not GitLab webhooks) so it works from a laptop behind the VPN. Python 3
    cp config.example.toml config.toml   # edit projects / channel
    cp .env.example .env                 # fill in tokens
    set -a; . ./.env; set +a
-   ./notifier.py --test-slack           # checks Slack
-   ./notifier.py --dry-run              # checks GitLab, prints instead of posting
-   ./notifier.py                        # first real run: records existing items, sends nothing
-   ./notifier.py --status               # last run, pending/held notifications, health
+   python3 -m gitlab_slack_notifier --test-slack  # checks Slack
+   python3 -m gitlab_slack_notifier --dry-run     # checks GitLab, prints instead of posting
+   python3 -m gitlab_slack_notifier               # first real run: records existing items, sends nothing
+   python3 -m gitlab_slack_notifier --status      # last run, pending/held notifications, health
    ```
 
    `--flush` delivers held notifications immediately, ignoring quiet hours. `-v` enables debug logs.
@@ -66,7 +66,7 @@ Polling (not GitLab webhooks) so it works from a laptop behind the VPN. Python 3
 
 Requires systemd (on WSL: `[boot] systemd=true` in `/etc/wsl.conf`). The unit file
 [`gitlab-slack-notifier.service`](gitlab-slack-notifier.service) loads `.env` and runs
-`notifier.py --loop 120`, restarting on failure. It assumes the repo is at `~/repos/gitlab-slack-notifier`
+`python3 -m gitlab_slack_notifier --loop 120`, restarting on failure. It assumes the repo is at `~/repos/gitlab-slack-notifier`
 (edit `WorkingDirectory` otherwise).
 
 ```sh
@@ -91,14 +91,14 @@ next time WSL boots.
 
 ### Alternatives
 
-- In a terminal / tmux: `./notifier.py --loop 120`
-- Cron (every 2 min): `*/2 * * * * cd ~/repos/gitlab-slack-notifier && . ./.env && ./notifier.py >> notifier.log 2>&1`
+- In a terminal / tmux: `python3 -m gitlab_slack_notifier --loop 120`
+- Cron (every 2 min): `*/2 * * * * cd ~/repos/gitlab-slack-notifier && . ./.env && python3 -m gitlab_slack_notifier >> notifier.log 2>&1`
 
 ## Development
 
 ```
-notifier.py                      # entry point (also: python3 -m gitlab_slack_notifier)
 gitlab_slack_notifier/
+  __main__.py                    # entry point: python3 -m gitlab_slack_notifier (run from the repo root)
   cli.py                         # argument parsing, main loop
   runner.py                      # one cycle: collect → filter → outbox → deliver → save state
   config.py                      # typed Config (dataclass) + validation

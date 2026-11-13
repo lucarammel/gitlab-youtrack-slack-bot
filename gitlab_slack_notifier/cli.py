@@ -30,6 +30,7 @@ Config in config.toml, secrets in environment variables (see .env.example)."""
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap = argparse.ArgumentParser(
+        prog="python3 -m gitlab_slack_notifier",
         description=DESCRIPTION,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
