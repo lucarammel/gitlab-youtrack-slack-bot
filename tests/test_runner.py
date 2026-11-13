@@ -80,6 +80,20 @@ class RunnerTest(unittest.TestCase):
         self.assertEqual(len(self.slack.sent), 2)
         self.assertIn("MR 2", self.slack.sent[1])
 
+    def test_connectivity_alert_and_recovery(self):
+        self.notifier().run_once()
+        self.gl.todos = [todo(1)]
+        self.gl.fail = True
+        for _ in range(3):
+            with self.assertRaises(ApiError):
+                self.notifier(alert_after_failures=3).run_once()
+        self.assertEqual(len(self.slack.sent), 1)
+        self.assertIn("can't poll", self.slack.sent[0])
+        self.gl.fail = False
+        self.notifier(alert_after_failures=3).run_once()
+        self.assertIn("back online", self.slack.sent[1])
+        self.assertIn("MR 1", self.slack.sent[2])  # nothing lost while failing
+
     def test_pipeline_success_notified_once(self):
         self.gl.my_mrs = [mr(100, 7, author=ME)]
         self.gl.pipelines[7] = {"id": 5, "status": "running", "created_at": RECENT, "updated_at": RECENT, "web_url": "u"}

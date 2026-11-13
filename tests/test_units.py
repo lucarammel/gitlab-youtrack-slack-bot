@@ -91,7 +91,7 @@ class DeliveryTest(unittest.TestCase):
     def test_quiet_hours_hold_except_bypass_and_system(self):
         sent = []
         d = Deliverer(sent.append, make_config(quiet_hours="19:00-08:30", quiet_bypass=["review_requested"]), sleep=lambda _: None)
-        outbox = [n(text="held"), n(kind="review_requested", text="urgent"), n(kind="morning", text="down")]
+        outbox = [n(text="held"), n(kind="review_requested", text="urgent"), n(kind="connectivity", text="down")]
         self.assertEqual(d.deliver(outbox, MONDAY_NIGHT), (2, 1))
         self.assertEqual(sorted(sent), ["down", "urgent"])
         self.assertEqual([x.text for x in outbox], ["held"])

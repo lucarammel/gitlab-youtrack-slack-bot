@@ -21,6 +21,8 @@ Delivery features (see comments in `config.example.toml`):
 - **Reliable delivery**: notifications go through an outbox persisted in `state.json`; if Slack fails
   halfway, the rest is sent on the next run (no loss, no duplicates).
 - **Retries**: transient HTTP errors (429/5xx/timeouts) are retried with backoff.
+- **Connectivity alert**: after `alert_after_failures` consecutive failed polls (VPN down…), one
+  Slack alert, then a "back online" message once polling works again.
 
 Polling (not GitLab webhooks) so it works from a laptop behind the VPN. Python 3.11+, no dependencies.
 
@@ -105,6 +107,7 @@ gitlab_slack_notifier/
     todos.py  new_mrs.py  my_mrs.py  pipelines.py  youtrack.py
   delivery.py                    # quiet hours, digest composition, posting
   filters.py                     # ignore rules
+  health.py                      # connectivity alert / recovery
   morning.py                     # daily greeting
   clients/                       # GitLab, YouTrack, Slack API clients
   http.py                        # JSON over urllib, retries, ApiError

@@ -34,11 +34,20 @@ class FakeGitLab:
         self.review_mrs: list[dict] = []
         self.notes: dict[int, list[dict]] = {}
         self.pipelines: dict[int, dict] = {}
+        self.fail = False
+
+    def _check(self):
+        if self.fail:
+            from gitlab_slack_notifier.http import ApiError
+
+            raise ApiError("gitlab.example.com: <urlopen error timed out>")
 
     def current_user(self):
+        self._check()
         return ME
 
     def pending_todos(self):
+        self._check()
         return self.todos
 
     def project_open_mrs(self, project, created_after):

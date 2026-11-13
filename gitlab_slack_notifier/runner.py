@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
-from . import morning
+from . import health, morning
 from .clients import GitLab, Slack, YouTrack
 from .collectors import COLLECTORS, Context
 from .config import Config
@@ -88,12 +88,16 @@ class Notifier:
         error: ApiError | None = None
         try:
             fresh = self.collect(state, now)
+            alert = health.on_success(state)
         except ApiError as e:
             # Roll back partially-updated seen ids so nothing is lost on the next attempt.
             state.restore(snapshot)
             error, fresh = e, []
+            alert = health.on_failure(state, self.cfg, e, quiet=is_quiet(now, self.cfg))
 
         outbox = state.outbox
+        if alert:
+            outbox.insert(0, alert)
         outbox += fresh
         result.collected = len(fresh)
         try:

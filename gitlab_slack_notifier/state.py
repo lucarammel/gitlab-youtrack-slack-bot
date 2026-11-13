@@ -1,4 +1,4 @@
-"""Persistent state (state.json): seen ids, outbox, last run."""
+"""Persistent state (state.json): seen ids, outbox, last run, health counters."""
 
 from __future__ import annotations
 

@@ -58,6 +58,7 @@ class Config:
     quiet_weekends: bool = False
     quiet_bypass: list[str] = field(default_factory=list)  # kinds delivered even during quiet hours
     batch_threshold: int = 5  # >= this many pending notifications are merged into a digest (0 = never)
+    alert_after_failures: int = 5  # consecutive failed polls before a "can't reach GitLab" alert (0 = never)
 
     def __post_init__(self) -> None:
         self.quiet_window  # validate early

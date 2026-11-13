@@ -55,3 +55,6 @@ quiet_weekends = false
 quiet_bypass = []              # ["review_requested", "directly_addressed"]
 # When at least this many notifications are pending at once, merge them into one digest (0 = never).
 batch_threshold = 5
+# After N consecutive failed polls (VPN down, GitLab unreachable...), post an alert, then a "back
+# online" message on recovery (0 = never).
+alert_after_failures = 5
