@@ -7,7 +7,7 @@ from datetime import datetime
 
 EMOJI = {
     "arrows_counterclockwise": "🔄", "bookmark": "🔖", "bust_in_silhouette": "👤", "coffee": "☕",
-    "eyes": "👀", "key": "🔑",
+    "eyes": "👀", "inbox_tray": "📥", "key": "🔑",
     "new": "🆕", "no_entry_sign": "🚫",
     "speech_balloon": "💬", "sunny": "☀️", "tada": "🎉", "warning": "⚠️",
     "wave": "👋", "white_check_mark": "✅", "x": "❌",

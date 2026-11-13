@@ -35,10 +35,11 @@ class RunnerTest(unittest.TestCase):
 
     def notifier(self, now=MONDAY_NOON, **cfg):
         cfg.setdefault("morning_greeting", False)
+        cfg.setdefault("batch_threshold", 0)
         c = make_config(**cfg)
         return Notifier(
             c, self.gl, self.slack, self.state_path,
-            clock=lambda: now, deliverer=Deliverer(self.slack.post, sleep=lambda _: None),
+            clock=lambda: now, deliverer=Deliverer(self.slack.post, c, sleep=lambda _: None),
         )
 
     def test_first_run_records_without_sending(self):

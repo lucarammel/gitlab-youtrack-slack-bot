@@ -42,6 +42,9 @@ class Config:
     morning_hour: int = 8
     morning_weekdays_only: bool = True
 
+    # --- Delivery ---
+    batch_threshold: int = 5  # >= this many pending notifications are merged into a digest (0 = never)
+
     def __post_init__(self) -> None:
         if not 0 <= self.morning_hour <= 23:
             raise ConfigError("morning_hour must be between 0 and 23")

@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
+# Kinds that are always sent on their own, never merged into a digest.
+SYSTEM_KINDS = frozenset({"morning"})
+
 
 @dataclass
 class Notification:
@@ -11,6 +14,10 @@ class Notification:
     text: str  # Slack mrkdwn
     author: str | None = None  # GitLab username / YouTrack login
     title: str | None = None  # MR / issue title
+
+    @property
+    def is_system(self) -> bool:
+        return self.kind in SYSTEM_KINDS
 
     def to_dict(self) -> dict:
         return asdict(self)

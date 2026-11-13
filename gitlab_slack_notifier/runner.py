@@ -47,7 +47,7 @@ class Notifier:
         self.dry_run = dry_run
         self.clock = clock
         post = self._print if dry_run else slack.post
-        self.deliverer = deliverer or Deliverer(post, sleep=(lambda _: None) if dry_run else time.sleep)
+        self.deliverer = deliverer or Deliverer(post, cfg, sleep=(lambda _: None) if dry_run else time.sleep)
 
     @staticmethod
     def _print(text: str) -> None:

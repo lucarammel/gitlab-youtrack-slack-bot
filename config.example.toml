@@ -32,3 +32,7 @@ youtrack_fields = ["State", "Priority", "Activity"]
 morning_greeting = true
 morning_hour = 8
 morning_weekdays_only = true
+
+# --- Delivery ---
+# When at least this many notifications are pending at once, merge them into one digest (0 = never).
+batch_threshold = 5

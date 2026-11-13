@@ -12,6 +12,8 @@ is up, with a short summary: pending GitLab to-dos, MRs awaiting your review, yo
 unresolved YouTrack issues.
 
 Delivery features (see comments in `config.example.toml`):
+- **Digest**: when `batch_threshold` or more notifications are pending at once (after a laptop
+  resume…), they are merged into a single message instead of flooding the channel.
 - **Reliable delivery**: notifications go through an outbox persisted in `state.json`; if Slack fails
   halfway, the rest is sent on the next run (no loss, no duplicates).
 - **Retries**: transient HTTP errors (429/5xx/timeouts) are retried with backoff.
@@ -95,7 +97,7 @@ gitlab_slack_notifier/
   models.py                      # Notification(kind, text, author, title)
   collectors/                    # one module per source, registered in collectors/__init__.py
     todos.py  new_mrs.py  my_mrs.py  youtrack.py
-  delivery.py                    # outbox delivery (posting)
+  delivery.py                    # digest composition, posting
   morning.py                     # daily greeting
   clients/                       # GitLab, YouTrack, Slack API clients
   http.py                        # JSON over urllib, retries, ApiError
