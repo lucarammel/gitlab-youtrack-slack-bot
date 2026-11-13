@@ -121,6 +121,32 @@ class RunnerTest(unittest.TestCase):
         self.assertLess(msg.index("Comment"), msg.index("Approved"))
         self.assertNotIn("look", msg)  # mention: comes through the to-do list
 
+    def test_replies_in_my_review_threads(self):
+        self.notifier().run_once()
+        alice = {"id": 2, "username": "alice", "name": "Alice"}
+        bob = {"id": 3, "username": "bob", "name": "Bob"}
+        self.gl.reviewed_mrs = [mr(300, 12)]
+
+        def note(id, author, body, system=False):
+            return {"id": id, "created_at": RECENT, "author": author, "body": body, "system": system}
+
+        self.gl.discussions[12] = [
+            # my thread: alice's reply is notified, my follow-up and @mentions are not
+            {"notes": [note(1, ME, "why?"), note(2, alice, "because"), note(3, ME, "ok"), note(4, alice, "@me see")]},
+            # someone else's thread I never wrote in
+            {"notes": [note(5, bob, "nit"), note(6, alice, "fixed")]},
+            # thread started by someone else, then I joined: only replies after mine
+            {"notes": [note(7, bob, "hmm"), note(8, ME, "agree"), note(9, bob, "done")]},
+        ]
+        self.notifier().run_once()
+        self.notifier().run_once()
+        self.assertEqual(len(self.slack.sent), 1)
+        msg = self.slack.sent[0]
+        self.assertIn("because", msg)
+        self.assertIn("done", msg)
+        for absent in ("hmm", "fixed", "nit", "see"):
+            self.assertNotIn(absent, msg)
+
     def test_merge_of_my_mr_is_reported(self):
         self.notifier().run_once()
         alice = {"id": 2, "username": "alice", "name": "Alice"}

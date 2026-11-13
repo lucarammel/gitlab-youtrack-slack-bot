@@ -29,6 +29,7 @@ class Config:
     notify_todos: bool = True
     notify_new_mrs: bool = True
     notify_my_mr_activity: bool = True
+    notify_review_replies: bool = True  # replies in your threads on MRs you review
     notify_pipelines: bool = True
     # Final pipeline statuses reported on your own MRs. Failures usually already arrive as a
     # "build_failed" to-do, hence only "success" by default.

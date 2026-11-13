@@ -32,6 +32,8 @@ class FakeGitLab:
         self.my_mrs: list[dict] = []
         self.merged_mrs: list[dict] = []
         self.review_mrs: list[dict] = []
+        self.reviewed_mrs: list[dict] = []
+        self.discussions: dict[int, list[dict]] = {}
         self.notes: dict[int, list[dict]] = {}
         self.pipelines: dict[int, dict] = {}
         self.fail = False
@@ -61,6 +63,12 @@ class FakeGitLab:
 
     def mrs_to_review(self, username):
         return self.review_mrs
+
+    def reviewed_mrs_updated_after(self, username, updated_after):
+        return self.reviewed_mrs
+
+    def mr_discussions(self, project_id, iid):
+        return self.discussions.get(iid, [])
 
     def latest_mr_notes(self, project_id, iid, limit=50):
         return self.notes.get(iid, [])

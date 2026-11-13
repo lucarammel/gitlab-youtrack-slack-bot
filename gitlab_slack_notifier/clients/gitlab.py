@@ -65,6 +65,15 @@ class GitLab:
     def mrs_to_review(self, username: str) -> list[dict]:
         return self.get("/merge_requests", reviewer_username=username, state="opened", scope="all")
 
+    def reviewed_mrs_updated_after(self, username: str, updated_after: str) -> list[dict]:
+        """MRs you are a reviewer of (open, merged, closed) updated recently."""
+        return self.get(
+            "/merge_requests", reviewer_username=username, scope="all", state="all", updated_after=updated_after
+        )
+
+    def mr_discussions(self, project_id: int, iid: int) -> list[dict]:
+        return self.get(f"/projects/{project_id}/merge_requests/{iid}/discussions")
+
     def latest_mr_notes(self, project_id: int, iid: int, limit: int = 50) -> list[dict]:
         """Most recent notes, oldest first."""
         notes = self.get_page(
