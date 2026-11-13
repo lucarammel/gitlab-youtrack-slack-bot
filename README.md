@@ -11,6 +11,9 @@ Plus a morning greeting (once a day, first poll after `morning_hour`, weekdays) 
 is up, with a short summary: pending GitLab to-dos, MRs awaiting your review, your open MRs, your
 unresolved YouTrack issues.
 
+Delivery features (see comments in `config.example.toml`):
+- **Retries**: transient HTTP errors (429/5xx/timeouts) are retried with backoff.
+
 Polling (not GitLab webhooks) so it works from a laptop behind the VPN. Python 3.11+, no dependencies.
 
 ## Setup
@@ -92,7 +95,7 @@ gitlab_slack_notifier/
     todos.py  new_mrs.py  my_mrs.py  youtrack.py
   morning.py                     # daily greeting
   clients/                       # GitLab, YouTrack, Slack API clients
-  http.py                        # JSON over urllib, ApiError
+  http.py                        # JSON over urllib, retries, ApiError
 tests/                           # stdlib unittest, with fake clients
 ```
 
