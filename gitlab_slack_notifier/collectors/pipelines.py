@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..formatting import link, parse_ts
+from ..formatting import link, parse_ts, short_ref
 from ..models import Notification
 from .base import Context
 
@@ -35,7 +35,7 @@ def collect(ctx: Context) -> list[Notification]:
             continue
         if p["status"] not in wanted:
             continue
-        mr_link = link(mr["web_url"], f"{mr['references']['full']} {mr['title']}")
+        mr_link = link(mr["web_url"], f"{short_ref(mr['references']['full'])} {mr['title']}")
         out.append(
             Notification(
                 f"pipeline_{p['status']}",

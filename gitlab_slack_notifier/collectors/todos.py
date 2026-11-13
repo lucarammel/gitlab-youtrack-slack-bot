@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..formatting import esc, link, snippet
+from ..formatting import esc, link, short_ref, snippet
 from ..models import Notification
 from .base import Context
 
@@ -35,7 +35,7 @@ def collect(ctx: Context) -> list[Notification]:
             continue
         target = t.get("target") or {}
         title = target.get("title") or t.get("target_type", "")
-        ref = (target.get("references") or {}).get("full") or ""
+        ref = short_ref((target.get("references") or {}).get("full") or "")
         author = t.get("author") or {}
         text = (
             f"*{TODO_LABELS.get(action, action)}* by {esc(author.get('name', 'someone'))}\n"

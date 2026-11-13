@@ -33,6 +33,11 @@ def strip_markdown(body: str) -> str:
     return re.sub(r"\*\*|~~|`|\|", " ", body)  # emphasis, code, table pipes (not "__": dunder names)
 
 
+def short_ref(full: str) -> str:
+    """'group/sub/project!12' -> 'project!12' (same for issues '#12')."""
+    return full.rsplit("/", 1)[-1]
+
+
 def snippet(body: str, n: int = 200) -> str:
     body = " ".join(strip_markdown(body).split())
     return esc(body if len(body) <= n else body[: n - 1] + "…")

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..formatting import esc, link, mentions, parse_ts, snippet
+from ..formatting import esc, link, mentions, parse_ts, short_ref, snippet
 from ..models import Notification
 from .base import Context
 
@@ -24,7 +24,7 @@ def collect(ctx: Context) -> list[Notification]:
     seen = ctx.state.seen(SEEN_KEY)
     out = []
     for mr in ctx.gl.my_mrs_updated_after(ctx.since):
-        mr_link = link(mr["web_url"], f"{mr['references']['full']} {mr['title']}")
+        mr_link = link(mr["web_url"], f"{short_ref(mr['references']['full'])} {mr['title']}")
         for n in ctx.gl.latest_mr_notes(mr["project_id"], mr["iid"]):
             if n["id"] in seen or parse_ts(n["created_at"]) < since:
                 continue

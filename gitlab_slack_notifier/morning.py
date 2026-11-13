@@ -7,7 +7,7 @@ from datetime import datetime
 
 from .clients import GitLab, YouTrack
 from .config import Config
-from .formatting import age_days, esc, link
+from .formatting import age_days, esc, link, short_ref
 from .http import ApiError
 from .models import Notification
 from .state import State
@@ -35,7 +35,7 @@ def _mr_line(mr: dict, stale_days: int) -> str:
     days = age_days(mr["created_at"])
     stale = " :hourglass:" if stale_days and days >= stale_days else ""
     draft = " _(draft)_" if mr.get("draft") else ""
-    ref = mr.get("references", {}).get("full") or f"!{mr['iid']}"
+    ref = short_ref(mr.get("references", {}).get("full") or f"!{mr['iid']}")
     label = f"{ref} {mr['title']}"
     return f"    – {link(mr['web_url'], label)}{draft} · {days} j{stale}"
 

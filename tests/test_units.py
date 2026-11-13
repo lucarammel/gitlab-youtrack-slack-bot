@@ -4,7 +4,7 @@ from datetime import datetime
 from gitlab_slack_notifier.config import Config, ConfigError
 from gitlab_slack_notifier.delivery import Deliverer, compose, is_quiet
 from gitlab_slack_notifier.filters import NotificationFilter
-from gitlab_slack_notifier.formatting import mentions, snippet, to_plain
+from gitlab_slack_notifier.formatting import mentions, short_ref, snippet, to_plain
 from gitlab_slack_notifier.models import Notification
 
 from .fakes import make_config
@@ -27,6 +27,10 @@ class FormattingTest(unittest.TestCase):
 
     def test_to_plain(self):
         self.assertEqual(to_plain(":tada: <https://x|A &amp; B>"), "🎉 A & B — https://x")
+
+    def test_short_ref(self):
+        self.assertEqual(short_ref("my-group/my-subgroup/my-project!1981"), "my-project!1981")
+        self.assertEqual(short_ref("proj#12"), "proj#12")
 
     def test_snippet_strips_markdown(self):
         body = (
