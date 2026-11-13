@@ -39,7 +39,7 @@ def collect(ctx: Context) -> list[Notification]:
                 event = next((v for k, v in SYSTEM_EVENTS.items() if body.startswith(k)), None)
                 if event:
                     kind, label = event
-                    out.append(Notification(kind, f"*{label}* by {who}\n{mr_link}", author["username"], mr["title"]))
+                    out.append(Notification(kind, f"*{label}* by {who}\n{mr_link}", author["username"], mr["title"], mr_link))
                 continue
             # Mentions already come through the to-do list.
             if mentions(body, me["username"]):
@@ -50,6 +50,7 @@ def collect(ctx: Context) -> list[Notification]:
                     f"*:speech_balloon: Comment* by {who} on your MR\n{mr_link}\n> {snippet(body)}",
                     author["username"],
                     mr["title"],
+                    mr_link,
                 )
             )
     return out

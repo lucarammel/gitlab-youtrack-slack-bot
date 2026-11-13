@@ -24,9 +24,9 @@ def collect(ctx: Context) -> list[Notification]:
             if mr.get("draft") and not cfg.include_drafts:
                 continue
             draft = " _(draft)_" if mr.get("draft") else ""
-            text = (
-                f"*:new: New MR* in `{esc(str(proj))}` by {esc(mr['author']['name'])}{draft}\n"
-                f"{link(mr['web_url'], '!' + str(mr['iid']) + ' ' + mr['title'])}"
+            mr_link = link(mr["web_url"], "!" + str(mr["iid"]) + " " + mr["title"])
+            text = f"*:new: New MR* in `{esc(str(proj))}` by {esc(mr['author']['name'])}{draft}\n{mr_link}"
+            out.append(
+                Notification("new_mr", text, author=mr["author"].get("username"), title=mr["title"], subject=mr_link)
             )
-            out.append(Notification("new_mr", text, author=mr["author"].get("username"), title=mr["title"]))
     return out

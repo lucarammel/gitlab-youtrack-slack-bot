@@ -49,6 +49,18 @@ class FormattingTest(unittest.TestCase):
         self.assertEqual(to_plain("*State of deal_method*: a → b"), "State of deal_method: a → b")
 
 
+class NotificationTest(unittest.TestCase):
+    def test_body_drops_subject_line(self):
+        link = "<https://x/1|p!1 Fix>"
+        self.assertEqual(n(text=f"*Comment* by A\n{link}\n> hi", subject=link).body, "*Comment* by A\n> hi")
+        self.assertEqual(n(text=f"*Passed*\n{link} · <https://x/p|#5>", subject=link).body, "*Passed* · <https://x/p|#5>")
+        self.assertEqual(n(text="plain").body, "plain")
+
+    def test_roundtrip(self):
+        x = n(subject="<u|s>", author="a", title="t")
+        self.assertEqual(Notification.from_dict(x.to_dict()), x)
+
+
 class ConfigTest(unittest.TestCase):
     def test_unknown_keys_warn(self):
         with self.assertLogs("gitlab_slack_notifier.config", "WARNING"):

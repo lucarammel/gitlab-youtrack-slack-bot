@@ -41,6 +41,7 @@ def collect(ctx: Context) -> list[Notification]:
                 f"pipeline_{p['status']}",
                 f"*{FINAL[p['status']]}* on your MR\n{mr_link} · {link(p['web_url'], '#' + str(p['id']))}",
                 title=mr["title"],
+                subject=mr_link,
             )
         )
     ctx.state.data[STATE_KEY] = current  # drops MRs that are no longer open

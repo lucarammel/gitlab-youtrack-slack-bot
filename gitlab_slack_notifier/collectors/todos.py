@@ -37,11 +37,9 @@ def collect(ctx: Context) -> list[Notification]:
         title = target.get("title") or t.get("target_type", "")
         ref = short_ref((target.get("references") or {}).get("full") or "")
         author = t.get("author") or {}
-        text = (
-            f"*{TODO_LABELS.get(action, action)}* by {esc(author.get('name', 'someone'))}\n"
-            f"{link(t['target_url'], f'{ref} {title}'.strip())}"
-        )
+        target_link = link(t["target_url"], f"{ref} {title}".strip())
+        text = f"*{TODO_LABELS.get(action, action)}* by {esc(author.get('name', 'someone'))}\n{target_link}"
         if t.get("body") and action in ("mentioned", "directly_addressed"):
             text += f"\n> {snippet(t['body'])}"
-        out.append(Notification(action, text, author=author.get("username"), title=title))
+        out.append(Notification(action, text, author=author.get("username"), title=title, subject=target_link))
     return out

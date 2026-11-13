@@ -61,7 +61,7 @@ def collect(ctx: Context) -> list[Notification]:
         ilink = link(yt.issue_url(iid), f"{iid} {summary}".strip())
 
         def note(kind: str, text: str) -> None:
-            out.append(Notification(kind, text, author=author.get("login"), title=summary))
+            out.append(Notification(kind, text, author=author.get("login"), title=summary, subject=ilink))
 
         cat = (a.get("category") or {}).get("id")
         if cat == "CommentsCategory":
