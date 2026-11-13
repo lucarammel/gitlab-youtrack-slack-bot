@@ -34,5 +34,11 @@ morning_hour = 8
 morning_weekdays_only = true
 
 # --- Delivery ---
+# Quiet hours (local time): notifications are held, then delivered when they end (as a digest if many).
+# quiet_hours = "19:00-08:30"
+quiet_weekends = false
+# Kinds delivered even during quiet hours: to-do actions (mentioned, review_requested, build_failed...),
+# new_mr, mr_comment, mr_approved, mr_unapproved, mr_merged, yt_mention, yt_assigned, yt_comment...
+quiet_bypass = []              # ["review_requested", "directly_addressed"]
 # When at least this many notifications are pending at once, merge them into one digest (0 = never).
 batch_threshold = 5

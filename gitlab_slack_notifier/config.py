@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import re
 import tomllib
 from dataclasses import dataclass, field
+from datetime import time
 from pathlib import Path
 
 log = logging.getLogger(__name__)
@@ -43,11 +45,28 @@ class Config:
     morning_weekdays_only: bool = True
 
     # --- Delivery ---
+    quiet_hours: str | None = None  # "19:00-08:30": notifications are held, then sent as a digest
+    quiet_weekends: bool = False
+    quiet_bypass: list[str] = field(default_factory=list)  # kinds delivered even during quiet hours
     batch_threshold: int = 5  # >= this many pending notifications are merged into a digest (0 = never)
 
     def __post_init__(self) -> None:
+        self.quiet_window  # validate early
         if not 0 <= self.morning_hour <= 23:
             raise ConfigError("morning_hour must be between 0 and 23")
+
+    @property
+    def quiet_window(self) -> tuple[time, time] | None:
+        if not self.quiet_hours:
+            return None
+        m = re.fullmatch(r"\s*(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*", self.quiet_hours)
+        if not m:
+            raise ConfigError(f"quiet_hours must look like '19:00-08:30', got {self.quiet_hours!r}")
+        h1, m1, h2, m2 = map(int, m.groups())
+        try:
+            return time(h1, m1), time(h2, m2)
+        except ValueError as e:
+            raise ConfigError(f"quiet_hours: {e}") from None
 
     @classmethod
     def from_dict(cls, data: dict) -> Config:

@@ -6,10 +6,12 @@ from pathlib import Path
 from gitlab_slack_notifier.delivery import Deliverer
 from gitlab_slack_notifier.http import ApiError
 from gitlab_slack_notifier.runner import Notifier
+from gitlab_slack_notifier.state import State
 
 from .fakes import ME, FakeGitLab, FakeSlack, make_config, mr
 
 MONDAY_NOON = datetime(2026, 11, 9, 12, 0)
+MONDAY_NIGHT = datetime(2026, 11, 9, 23, 0)
 RECENT = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
 
 
@@ -50,6 +52,15 @@ class RunnerTest(unittest.TestCase):
         self.notifier().run_once()
         self.assertEqual(len(self.slack.sent), 1)
         self.assertIn("MR 2", self.slack.sent[0])
+
+    def test_quiet_hours_hold_then_deliver(self):
+        self.notifier().run_once()
+        self.gl.todos = [todo(1)]
+        r = self.notifier(now=MONDAY_NIGHT, quiet_hours="19:00-08:30").run_once()
+        self.assertEqual((r.sent, r.held), (0, 1))
+        self.assertEqual(len(State.load(self.state_path).outbox), 1)
+        r = self.notifier(now=MONDAY_NOON, quiet_hours="19:00-08:30").run_once()
+        self.assertEqual((r.sent, r.held), (1, 0))
 
     def test_slack_failure_retries_next_run(self):
         self.notifier().run_once()

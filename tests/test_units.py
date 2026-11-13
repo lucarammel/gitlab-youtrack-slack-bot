@@ -1,11 +1,16 @@
 import unittest
+from datetime import datetime
 
-from gitlab_slack_notifier.config import Config
-from gitlab_slack_notifier.delivery import Deliverer, compose
+from gitlab_slack_notifier.config import Config, ConfigError
+from gitlab_slack_notifier.delivery import Deliverer, compose, is_quiet
 from gitlab_slack_notifier.formatting import mentions, to_plain
 from gitlab_slack_notifier.models import Notification
 
 from .fakes import make_config
+
+MONDAY_NOON = datetime(2026, 11, 9, 12, 0)
+MONDAY_NIGHT = datetime(2026, 11, 9, 23, 0)
+SATURDAY_NOON = datetime(2026, 11, 14, 12, 0)
 
 
 def n(kind="mr_comment", text="hello", **kw) -> Notification:
@@ -28,6 +33,23 @@ class ConfigTest(unittest.TestCase):
         with self.assertLogs("gitlab_slack_notifier.config", "WARNING"):
             Config.from_dict({"gitlab_url": "u", "notfy_todos": False})
 
+    def test_invalid_quiet_hours(self):
+        with self.assertRaises(ConfigError):
+            make_config(quiet_hours="7pm")
+
+
+class QuietHoursTest(unittest.TestCase):
+    def test_overnight_window(self):
+        cfg = make_config(quiet_hours="19:00-08:30")
+        self.assertTrue(is_quiet(MONDAY_NIGHT, cfg))
+        self.assertTrue(is_quiet(datetime(2026, 11, 9, 8, 0), cfg))
+        self.assertFalse(is_quiet(datetime(2026, 11, 9, 8, 30), cfg))
+        self.assertFalse(is_quiet(MONDAY_NOON, cfg))
+
+    def test_weekends(self):
+        self.assertTrue(is_quiet(SATURDAY_NOON, make_config(quiet_weekends=True)))
+        self.assertFalse(is_quiet(SATURDAY_NOON, make_config()))
+
 
 class DeliveryTest(unittest.TestCase):
     def test_compose_individual_below_threshold(self):
@@ -49,6 +71,15 @@ class DeliveryTest(unittest.TestCase):
         self.assertEqual(sum(len(m.items) for m in msgs), 10)
         self.assertTrue(all(len(m.text) <= 3500 for m in msgs))
 
+    def test_quiet_hours_hold_except_bypass_and_system(self):
+        sent = []
+        d = Deliverer(sent.append, make_config(quiet_hours="19:00-08:30", quiet_bypass=["review_requested"]), sleep=lambda _: None)
+        outbox = [n(text="held"), n(kind="review_requested", text="urgent"), n(kind="morning", text="down")]
+        self.assertEqual(d.deliver(outbox, MONDAY_NIGHT), (2, 1))
+        self.assertEqual(sorted(sent), ["down", "urgent"])
+        self.assertEqual([x.text for x in outbox], ["held"])
+        self.assertEqual(d.deliver(outbox, MONDAY_NIGHT, force=True), (1, 0))
+
     def test_failure_keeps_unsent(self):
         sent = []
 
@@ -60,7 +91,7 @@ class DeliveryTest(unittest.TestCase):
         d = Deliverer(post, make_config(), sleep=lambda _: None)
         outbox = [n(text="a"), n(text="b")]
         with self.assertRaises(RuntimeError):
-            d.deliver(outbox)
+            d.deliver(outbox, MONDAY_NOON)
         self.assertEqual([x.text for x in outbox], ["b"])
 
 

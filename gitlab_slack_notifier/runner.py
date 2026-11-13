@@ -13,7 +13,7 @@ from . import morning
 from .clients import GitLab, Slack, YouTrack
 from .collectors import COLLECTORS, Context
 from .config import Config
-from .delivery import Deliverer
+from .delivery import Deliverer, is_quiet
 from .http import ApiError
 from .models import Notification
 from .state import State, now_iso
@@ -25,6 +25,7 @@ log = logging.getLogger(__name__)
 class RunResult:
     collected: int = 0
     sent: int = 0
+    held: int = 0
 
 
 class Notifier:
@@ -69,13 +70,14 @@ class Notifier:
             fresh = []
 
         if morning.due(state, self.cfg, now):
-            fresh.insert(0, morning.message(self.gl, self.yt, me))
+            held = len(state.outbox) + len(fresh) if is_quiet(now, self.cfg) else 0
+            fresh.insert(0, morning.message(self.gl, self.yt, me, held=held))
             morning.mark_sent(state, now)
 
         state.last_run = started
         return fresh
 
-    def run_once(self) -> RunResult:
+    def run_once(self, *, flush: bool = False) -> RunResult:
         state = State.load(self.state_path)
         now = self.clock()
         result = RunResult()
@@ -92,7 +94,7 @@ class Notifier:
         outbox += fresh
         result.collected = len(fresh)
         try:
-            result.sent = self.deliverer.deliver(outbox)
+            result.sent, result.held = self.deliverer.deliver(outbox, now, force=flush)
         finally:
             state.outbox = outbox
             if not self.dry_run:

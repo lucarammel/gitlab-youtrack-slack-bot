@@ -30,7 +30,7 @@ def mark_sent(state: State, now: datetime) -> None:
     state.data[KEY] = now.date().isoformat()
 
 
-def message(gl: GitLab, yt: YouTrack | None, me: dict) -> Notification:
+def message(gl: GitLab, yt: YouTrack | None, me: dict, held: int = 0) -> Notification:
     first = (me.get("name") or me["username"]).split()[0]
     lines = [f"*:sunny: Bonjour {esc(first)} !*"]
     try:
@@ -46,5 +46,7 @@ def message(gl: GitLab, yt: YouTrack | None, me: dict) -> Notification:
     except (ApiError, KeyError) as e:
         log.warning("Morning summary unavailable: %s", e)
         lines.append(f"_(résumé indisponible : {esc(str(e))})_")
+    if held:
+        lines.append(f"• {held} notification(s) mise(s) de côté pendant les heures calmes :inbox_tray:")
     lines.append("Bonne journée :coffee:")
     return Notification("morning", "\n".join(lines))

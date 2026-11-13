@@ -33,6 +33,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--state", default=ROOT / "state.json", type=Path)
     ap.add_argument("--loop", type=int, metavar="SECONDS", help="Keep running, polling every N seconds.")
     ap.add_argument("--dry-run", action="store_true", help="Print messages instead of posting; don't save state.")
+    ap.add_argument("--flush", action="store_true", help="Deliver held notifications now, ignoring quiet hours.")
     ap.add_argument("--test-slack", action="store_true", help="Send a test message and exit.")
     return ap.parse_args(argv)
 
@@ -85,8 +86,9 @@ def main(argv: list[str] | None = None) -> None:
 
     while True:
         try:
-            r = notifier.run_once()
-            log.info("%d new, %d sent%s", r.collected, r.sent, " (dry run)" if args.dry_run else "")
+            r = notifier.run_once(flush=args.flush)
+            held = f", {r.held} held" if r.held else ""
+            log.info("%d new, %d sent%s%s", r.collected, r.sent, held, " (dry run)" if args.dry_run else "")
         except ApiError as e:
             log.error("%s", e)
             if not args.loop:
