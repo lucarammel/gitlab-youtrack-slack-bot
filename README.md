@@ -7,6 +7,10 @@ Polls GitLab and posts to a Slack conversation when:
 - YouTrack (optional): you're mentioned or assigned, or an issue that concerns you gets a comment,
   a change on a field listed in `youtrack_fields` (State, Priority, Activity…), or is created
 
+Plus a morning greeting (once a day, first poll after `morning_hour`, weekdays) confirming the service
+is up, with a short summary: pending GitLab to-dos, MRs awaiting your review, your open MRs, your
+unresolved YouTrack issues.
+
 Polling (not GitLab webhooks) so it works from a laptop behind the VPN. Python 3.11+, no dependencies.
 
 ## Setup

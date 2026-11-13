@@ -27,3 +27,8 @@ notify_youtrack = true
 youtrack_query = "for: me or reporter: me or commenter: me or tag: Star"
 # Field changes to report on those issues:
 youtrack_fields = ["State", "Priority", "Activity"]
+
+# --- Morning greeting: once a day, on the first poll at/after morning_hour (local time) ---
+morning_greeting = true
+morning_hour = 8
+morning_weekdays_only = true

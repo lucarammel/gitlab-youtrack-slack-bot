@@ -402,6 +402,35 @@ def collect_youtrack(yt: YouTrack, state: dict, cfg: dict) -> list[str]:
 # --------------------------------------------------------------------------- #
 # Main
 # --------------------------------------------------------------------------- #
+def morning_due(state: dict, cfg: dict) -> bool:
+    """True once per day, on the first run at/after morning_hour (local time)."""
+    if not cfg.get("morning_greeting", True):
+        return False
+    now = datetime.now()
+    if cfg.get("morning_weekdays_only", True) and now.weekday() >= 5:
+        return False
+    return now.hour >= int(cfg.get("morning_hour", 8)) and state.get("last_greeting") != now.date().isoformat()
+
+
+def morning_message(gl: GitLab, yt: YouTrack | None, me: dict) -> str:
+    first = (me.get("name") or me["username"]).split()[0]
+    lines = [f"*:sunny: Bonjour {esc(first)} !*"]
+    try:
+        todos = gl.get("/todos", state="pending")
+        reviews = gl.get("/merge_requests", reviewer_username=me["username"], state="opened", scope="all")
+        mine = gl.get("/merge_requests", scope="created_by_me", state="opened")
+        lines.append(f"• {len(todos)} to-do GitLab en attente")
+        lines.append(f"• {len(reviews)} MR en attente de ta review")
+        lines.append(f"• {len(mine)} MR ouverte(s) à toi")
+        if yt:
+            issues = yt.get("/issues", query="for: me #Unresolved", fields="idReadable")
+            lines.append(f"• {len(issues)} issue(s) YouTrack non résolue(s) assignée(s) à toi")
+    except (urllib.error.URLError, KeyError) as e:
+        lines.append(f"_(résumé indisponible : {esc(str(e))})_")
+    lines.append("Bonne journée :coffee:")
+    return "\n".join(lines)
+
+
 def run_once(
     gl: GitLab, yt: YouTrack | None, slack: Slack, cfg: dict, state_path: Path, dry_run: bool
 ) -> None:
@@ -424,6 +453,10 @@ def run_once(
         print(f"First run: recorded {len(msgs)} existing item(s) as seen, nothing sent.")
         msgs = []
 
+    greeting = morning_due(state, cfg)
+    if greeting:
+        msgs.insert(0, morning_message(gl, yt, me))
+
     for m in msgs:
         if dry_run:
             print("---\n" + m)
@@ -432,6 +465,8 @@ def run_once(
             time.sleep(1.1)  # Slack rate limit: ~1 msg/s per channel
 
     state["last_run"] = started
+    if greeting:
+        state["last_greeting"] = datetime.now().date().isoformat()
     if not dry_run:
         save_state(state_path, state)
     print(f"[{started}] {len(msgs)} notification(s) {'(dry run)' if dry_run else 'sent'}.")
