@@ -29,6 +29,10 @@ class Config:
     notify_todos: bool = True
     notify_new_mrs: bool = True
     notify_my_mr_activity: bool = True
+    notify_pipelines: bool = True
+    # Final pipeline statuses reported on your own MRs. Failures usually already arrive as a
+    # "build_failed" to-do, hence only "success" by default.
+    pipeline_statuses: list[str] = field(default_factory=lambda: ["success"])
     include_own_mrs: bool = False
     include_drafts: bool = True
     todo_actions: list[str] | None = None

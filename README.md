@@ -4,6 +4,7 @@ Polls GitLab and posts to a Slack conversation when:
 - something lands in your GitLab To-Do list (mention, review request, assignment, failed pipeline, ...)
 - a new MR is opened on a watched project
 - someone comments on / approves / merges one of your MRs
+- the pipeline of one of your MRs finishes (green by default — "you can merge")
 - YouTrack (optional): you're mentioned or assigned, or an issue that concerns you gets a comment,
   a change on a field listed in `youtrack_fields` (State, Priority, Activity…), or is created
 
@@ -101,7 +102,7 @@ gitlab_slack_notifier/
   state.py                       # state.json: seen ids, outbox, last run
   models.py                      # Notification(kind, text, author, title)
   collectors/                    # one module per source, registered in collectors/__init__.py
-    todos.py  new_mrs.py  my_mrs.py  youtrack.py
+    todos.py  new_mrs.py  my_mrs.py  pipelines.py  youtrack.py
   delivery.py                    # quiet hours, digest composition, posting
   filters.py                     # ignore rules
   morning.py                     # daily greeting

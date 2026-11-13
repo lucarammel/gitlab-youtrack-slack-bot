@@ -80,6 +80,16 @@ class RunnerTest(unittest.TestCase):
         self.assertEqual(len(self.slack.sent), 2)
         self.assertIn("MR 2", self.slack.sent[1])
 
+    def test_pipeline_success_notified_once(self):
+        self.gl.my_mrs = [mr(100, 7, author=ME)]
+        self.gl.pipelines[7] = {"id": 5, "status": "running", "created_at": RECENT, "updated_at": RECENT, "web_url": "u"}
+        self.notifier().run_once()
+        self.gl.pipelines[7] = {**self.gl.pipelines[7], "status": "success"}
+        self.notifier().run_once()
+        self.notifier().run_once()
+        self.assertEqual(len(self.slack.sent), 1)
+        self.assertIn("Pipeline passed", self.slack.sent[0])
+
     def test_my_mr_comments_skip_mentions_and_self(self):
         self.notifier().run_once()
         self.gl.my_mrs = [mr(100, 7, author=ME)]

@@ -33,6 +33,7 @@ class FakeGitLab:
         self.merged_mrs: list[dict] = []
         self.review_mrs: list[dict] = []
         self.notes: dict[int, list[dict]] = {}
+        self.pipelines: dict[int, dict] = {}
 
     def current_user(self):
         return ME
@@ -54,6 +55,9 @@ class FakeGitLab:
 
     def latest_mr_notes(self, project_id, iid, limit=50):
         return self.notes.get(iid, [])
+
+    def latest_mr_pipeline(self, project_id, iid):
+        return self.pipelines.get(iid)
 
 
 class FakeSlack:

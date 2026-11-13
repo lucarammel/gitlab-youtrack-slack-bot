@@ -12,6 +12,10 @@ watched_projects = [
 notify_todos = true            # mentions, review requests, assignments, failed pipelines...
 notify_new_mrs = true          # new MRs on watched_projects
 notify_my_mr_activity = true   # comments / approvals / merge on MRs you authored
+notify_pipelines = true        # final pipeline status on your open MRs
+# Which final statuses to report ("success", "failed", "canceled"). Failures already arrive as a
+# "build_failed" to-do when you triggered the pipeline, hence only "success" by default.
+pipeline_statuses = ["success"]
 
 include_own_mrs = false
 include_drafts = true
@@ -25,7 +29,7 @@ ignore_authors = []            # ["renovate-bot", "gitlab-bot"]
 # Drop notifications whose MR / issue title matches one of these regexes (case-insensitive):
 ignore_title_patterns = []     # ["^chore\\(deps\\)"]
 # Mute whole kinds: todo actions (mentioned, review_requested, build_failed...), new_mr, mr_comment,
-# mr_approved, mr_unapproved, mr_merged,
+# mr_approved, mr_unapproved, mr_merged, pipeline_success, pipeline_failed, pipeline_canceled,
 # yt_mention, yt_assigned, yt_comment, yt_field, yt_new_issue
 muted_kinds = []
 

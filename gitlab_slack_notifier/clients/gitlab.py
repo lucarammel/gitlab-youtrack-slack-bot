@@ -74,3 +74,7 @@ class GitLab:
             per_page=limit,
         )
         return list(reversed(notes))
+
+    def latest_mr_pipeline(self, project_id: int, iid: int) -> dict | None:
+        pipelines = self.get_page(f"/projects/{project_id}/merge_requests/{iid}/pipelines", per_page=1)
+        return pipelines[0] if pipelines else None

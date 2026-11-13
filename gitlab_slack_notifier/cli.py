@@ -19,7 +19,7 @@ log = logging.getLogger("notifier")
 
 DESCRIPTION = """Poll GitLab (and YouTrack) and post notifications to a Slack conversation.
 
-Sources: GitLab to-dos, new MRs on watched projects, activity on your MRs,
+Sources: GitLab to-dos, new MRs on watched projects, activity and pipelines on your MRs,
 YouTrack issues that concern you, plus a morning summary.
 Config in config.toml, secrets in environment variables (see .env.example)."""
 
