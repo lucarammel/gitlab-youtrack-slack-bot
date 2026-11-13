@@ -77,3 +77,24 @@ next time WSL boots.
 
 - In a terminal / tmux: `./notifier.py --loop 120`
 - Cron (every 2 min): `*/2 * * * * cd ~/repos/gitlab-slack-notifier && . ./.env && ./notifier.py >> notifier.log 2>&1`
+
+## Development
+
+```
+notifier.py                      # entry point (also: python3 -m gitlab_slack_notifier)
+gitlab_slack_notifier/
+  cli.py                         # argument parsing, main loop
+  runner.py                      # one cycle: collect → post → save state
+  config.py                      # typed Config (dataclass) + validation
+  state.py                       # state.json: seen ids, last run
+  models.py                      # Notification(kind, text, author, title)
+  collectors/                    # one module per source, registered in collectors/__init__.py
+    todos.py  new_mrs.py  my_mrs.py  youtrack.py
+  morning.py                     # daily greeting
+  clients/                       # GitLab, YouTrack, Slack API clients
+  http.py                        # JSON over urllib, ApiError
+tests/                           # stdlib unittest, with fake clients
+```
+
+Run the tests with `python3 -m unittest`. To add a source: write `collectors/<name>.py` exposing
+`collect(ctx) -> list[Notification]`, then register it in `COLLECTORS`.
