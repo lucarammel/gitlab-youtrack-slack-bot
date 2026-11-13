@@ -28,6 +28,11 @@ class FormattingTest(unittest.TestCase):
     def test_to_plain(self):
         self.assertEqual(to_plain(":tada: <https://x|A &amp; B>"), "🎉 A & B — https://x")
 
+    def test_to_plain_drops_mrkdwn_markers(self):
+        text = "*:new: New MR* in `my-project` _(draft)_\n<https://x/deal_method_a|fix deal_method>\n> quoted"
+        self.assertEqual(to_plain(text), "🆕 New MR in my-project (draft)\nfix deal_method — https://x/deal_method_a\n│ quoted")
+        self.assertEqual(to_plain("*State of deal_method*: a → b"), "State of deal_method: a → b")
+
 
 class ConfigTest(unittest.TestCase):
     def test_unknown_keys_warn(self):
