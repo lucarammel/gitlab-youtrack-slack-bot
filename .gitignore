@@ -3,3 +3,4 @@ config.toml
 state.json
 state.tmp
 *.log
+__pycache__/
