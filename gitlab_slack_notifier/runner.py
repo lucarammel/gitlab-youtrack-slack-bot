@@ -1,4 +1,4 @@
-"""One polling cycle: collect -> post -> save state."""
+"""One polling cycle: collect -> enqueue in the outbox -> deliver -> save state."""
 
 from __future__ import annotations
 
@@ -13,12 +13,12 @@ from . import morning
 from .clients import GitLab, Slack, YouTrack
 from .collectors import COLLECTORS, Context
 from .config import Config
+from .delivery import Deliverer
+from .http import ApiError
 from .models import Notification
 from .state import State, now_iso
 
 log = logging.getLogger(__name__)
-
-SLACK_INTERVAL = 1.1  # Slack rate limit: ~1 msg/s per channel
 
 
 @dataclass
@@ -38,7 +38,7 @@ class Notifier:
         yt: YouTrack | None = None,
         dry_run: bool = False,
         clock: Callable[[], datetime] = datetime.now,
-        sleep: Callable[[float], None] = time.sleep,
+        deliverer: Deliverer | None = None,
     ):
         self.cfg = cfg
         self.gl = gl
@@ -46,8 +46,8 @@ class Notifier:
         self.state_path = state_path
         self.dry_run = dry_run
         self.clock = clock
-        self.post = self._print if dry_run else slack.post
-        self.sleep = (lambda _: None) if dry_run else sleep
+        post = self._print if dry_run else slack.post
+        self.deliverer = deliverer or Deliverer(post, sleep=(lambda _: None) if dry_run else time.sleep)
 
     @staticmethod
     def _print(text: str) -> None:
@@ -76,13 +76,27 @@ class Notifier:
         return fresh
 
     def run_once(self) -> RunResult:
-        """Posts everything, then saves state: on error nothing is saved and the run is retried."""
         state = State.load(self.state_path)
-        fresh = self.collect(state, self.clock())
-        for i, n in enumerate(fresh):
-            if i:
-                self.sleep(SLACK_INTERVAL)
-            self.post(n.text)
-        if not self.dry_run:
-            state.save()
-        return RunResult(collected=len(fresh), sent=len(fresh))
+        now = self.clock()
+        result = RunResult()
+        snapshot = state.snapshot()
+        error: ApiError | None = None
+        try:
+            fresh = self.collect(state, now)
+        except ApiError as e:
+            # Roll back partially-updated seen ids so nothing is lost on the next attempt.
+            state.restore(snapshot)
+            error, fresh = e, []
+
+        outbox = state.outbox
+        outbox += fresh
+        result.collected = len(fresh)
+        try:
+            result.sent = self.deliverer.deliver(outbox)
+        finally:
+            state.outbox = outbox
+            if not self.dry_run:
+                state.save()
+        if error:
+            raise error
+        return result

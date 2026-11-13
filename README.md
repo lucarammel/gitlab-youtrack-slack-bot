@@ -12,6 +12,8 @@ is up, with a short summary: pending GitLab to-dos, MRs awaiting your review, yo
 unresolved YouTrack issues.
 
 Delivery features (see comments in `config.example.toml`):
+- **Reliable delivery**: notifications go through an outbox persisted in `state.json`; if Slack fails
+  halfway, the rest is sent on the next run (no loss, no duplicates).
 - **Retries**: transient HTTP errors (429/5xx/timeouts) are retried with backoff.
 
 Polling (not GitLab webhooks) so it works from a laptop behind the VPN. Python 3.11+, no dependencies.
@@ -87,12 +89,13 @@ next time WSL boots.
 notifier.py                      # entry point (also: python3 -m gitlab_slack_notifier)
 gitlab_slack_notifier/
   cli.py                         # argument parsing, main loop
-  runner.py                      # one cycle: collect → post → save state
+  runner.py                      # one cycle: collect → outbox → deliver → save state
   config.py                      # typed Config (dataclass) + validation
-  state.py                       # state.json: seen ids, last run
+  state.py                       # state.json: seen ids, outbox, last run
   models.py                      # Notification(kind, text, author, title)
   collectors/                    # one module per source, registered in collectors/__init__.py
     todos.py  new_mrs.py  my_mrs.py  youtrack.py
+  delivery.py                    # outbox delivery (posting)
   morning.py                     # daily greeting
   clients/                       # GitLab, YouTrack, Slack API clients
   http.py                        # JSON over urllib, retries, ApiError

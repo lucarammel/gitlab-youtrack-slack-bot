@@ -1,10 +1,13 @@
-"""Persistent state (state.json): seen ids, last run."""
+"""Persistent state (state.json): seen ids, outbox, last run."""
 
 from __future__ import annotations
 
+import copy
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+from .models import Notification
 
 SEEN_KEEP = 2000
 
@@ -26,6 +29,12 @@ class State:
         tmp = self.path.with_suffix(".tmp")
         tmp.write_text(json.dumps(self.data, indent=2, sort_keys=True, ensure_ascii=False))
         tmp.replace(self.path)
+
+    def snapshot(self) -> dict:
+        return copy.deepcopy(self.data)
+
+    def restore(self, snapshot: dict) -> None:
+        self.data = snapshot
 
     # --- run bookkeeping ---
     @property
@@ -57,3 +66,12 @@ class State:
         known = set(current)
         current += [i for i in ids if i not in known and not known.add(i)]
         self.data[key] = current[-SEEN_KEEP:]
+
+    # --- outbox: notifications collected but not yet delivered ---
+    @property
+    def outbox(self) -> list[Notification]:
+        return [Notification.from_dict(d) for d in self.data.get("outbox", [])]
+
+    @outbox.setter
+    def outbox(self, items: list[Notification]) -> None:
+        self.data["outbox"] = [n.to_dict() for n in items]

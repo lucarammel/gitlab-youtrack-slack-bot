@@ -3,6 +3,8 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from gitlab_slack_notifier.delivery import Deliverer
+from gitlab_slack_notifier.http import ApiError
 from gitlab_slack_notifier.runner import Notifier
 
 from .fakes import ME, FakeGitLab, FakeSlack, make_config, mr
@@ -36,7 +38,7 @@ class RunnerTest(unittest.TestCase):
         c = make_config(**cfg)
         return Notifier(
             c, self.gl, self.slack, self.state_path,
-            clock=lambda: now, sleep=lambda _: None,
+            clock=lambda: now, deliverer=Deliverer(self.slack.post, sleep=lambda _: None),
         )
 
     def test_first_run_records_without_sending(self):
@@ -47,6 +49,17 @@ class RunnerTest(unittest.TestCase):
         self.notifier().run_once()
         self.assertEqual(len(self.slack.sent), 1)
         self.assertIn("MR 2", self.slack.sent[0])
+
+    def test_slack_failure_retries_next_run(self):
+        self.notifier().run_once()
+        self.gl.todos = [todo(1), todo(2)]
+        self.slack.fail_after = 1
+        with self.assertRaises(ApiError):
+            self.notifier().run_once()
+        self.slack.fail_after = None
+        self.notifier().run_once()
+        self.assertEqual(len(self.slack.sent), 2)
+        self.assertIn("MR 2", self.slack.sent[1])
 
     def test_my_mr_comments_skip_mentions_and_self(self):
         self.notifier().run_once()
