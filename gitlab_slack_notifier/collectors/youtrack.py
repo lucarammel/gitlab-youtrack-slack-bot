@@ -57,7 +57,7 @@ def collect(ctx: Context) -> list[Notification]:
             continue
         author = a.get("author") or {}
         who = esc(author.get("fullName") or "someone")
-        summary = issue.get("summary", "")
+        summary = (issue.get("summary") or "").strip()
         ilink = link(yt.issue_url(iid), f"{iid} {summary}".strip())
 
         def note(kind: str, text: str) -> None:
