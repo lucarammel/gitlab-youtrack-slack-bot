@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from ..formatting import esc, link, snippet
+from ..formatting import esc, link, mentions, snippet
 from ..models import Notification
 from .base import Context
 
@@ -67,7 +67,7 @@ def collect(ctx: Context) -> list[Notification]:
         if cat == "CommentsCategory":
             for c in a.get("added") or []:
                 text = c.get("text") or ""
-                if f"@{login}" in text:
+                if mentions(text, login):
                     note("yt_mention", f"*:speech_balloon: Mentioned* by {who} (YouTrack)\n{ilink}\n> {snippet(text)}")
                 elif iid in mine:
                     note("yt_comment", f"*:speech_balloon: Comment* by {who} (YouTrack)\n{ilink}\n> {snippet(text)}")

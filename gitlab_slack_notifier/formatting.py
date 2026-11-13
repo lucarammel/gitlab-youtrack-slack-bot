@@ -35,5 +35,10 @@ def to_plain(text: str) -> str:
     return text.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
 
 
+def mentions(body: str, username: str) -> bool:
+    """True if `body` contains @username as a whole handle (not @username2 or @username.bot)."""
+    return re.search(rf"@{re.escape(username)}(?![\w.-]*\w)", body) is not None
+
+
 def parse_ts(ts: str) -> datetime:
     return datetime.fromisoformat(ts.replace("Z", "+00:00"))

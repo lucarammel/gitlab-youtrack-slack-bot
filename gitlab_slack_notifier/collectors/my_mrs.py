@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..formatting import esc, link, parse_ts, snippet
+from ..formatting import esc, link, mentions, parse_ts, snippet
 from ..models import Notification
 from .base import Context
 
@@ -42,7 +42,7 @@ def collect(ctx: Context) -> list[Notification]:
                     out.append(Notification(kind, f"*{label}* by {who}\n{mr_link}", author["username"], mr["title"]))
                 continue
             # Mentions already come through the to-do list.
-            if f"@{me['username']}" in body:
+            if mentions(body, me["username"]):
                 continue
             out.append(
                 Notification(
