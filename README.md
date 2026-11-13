@@ -15,8 +15,10 @@ age and an :hourglass: past `stale_review_days`), your open MRs, your unresolved
 Delivery features (see comments in `config.example.toml`):
 - **Quiet hours** (`quiet_hours = "19:00-08:30"`, `quiet_weekends`): notifications are held and
   delivered when the quiet period ends; `quiet_bypass` lets urgent kinds through.
+- **Grouping**: notifications about the same MR / issue are sent as one message, the link shown once.
 - **Digest**: when `batch_threshold` or more notifications are pending at once (after quiet hours,
-  after a laptop resume…), they are merged into a single message instead of flooding the channel.
+  after a laptop resume…), they are merged into a single message instead of flooding the channel
+  (counted after grouping).
 - **Ignore rules**: `ignore_authors` (bots…), `ignore_title_patterns` (regexes), `muted_kinds`.
 - **Reliable delivery**: notifications go through an outbox persisted in `state.json`; if Slack fails
   halfway, the rest is sent on the next run (no loss, no duplicates).

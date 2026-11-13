@@ -35,21 +35,46 @@ class Message:
     items: list[Notification]
 
 
+def group(items: list[Notification]) -> list[Message]:
+    """One block per MR / issue (in order of first appearance): the subject once, then each
+    notification without it. Notifications without a subject stay on their own."""
+    by_subject: dict[str, list[Notification]] = {}
+    for i, n in enumerate(items):
+        by_subject.setdefault(n.subject or f"#{i}", []).append(n)
+
+    blocks: list[Message] = []
+    for ns in by_subject.values():
+        if len(ns) == 1:
+            blocks.append(Message(ns[0].text, ns))
+            continue
+        current = Message(ns[0].subject, [])
+        for n in ns:
+            if current.items and len(current.text) + len(n.body) + 1 > MAX_MESSAGE_CHARS:
+                blocks.append(current)
+                current = Message(n.subject, [])
+            current.text += "\n" + n.body
+            current.items.append(n)
+        blocks.append(current)
+    return blocks
+
+
 def compose(items: list[Notification], batch_threshold: int) -> list[Message]:
-    """One message per notification, or a digest (split into chunks) when there are many."""
+    """Notifications about the same MR / issue are grouped; the resulting blocks are sent one per
+    message, or as a digest (split into chunks) when there are at least `batch_threshold`."""
     system = [Message(n.text, [n]) for n in items if n.is_system]
     rest = [n for n in items if not n.is_system]
-    if not batch_threshold or len(rest) < batch_threshold:
-        return system + [Message(n.text, [n]) for n in rest]
+    blocks = group(rest)
+    if not batch_threshold or len(blocks) < batch_threshold:
+        return system + blocks
 
     chunks: list[Message] = []
     current = Message(f"*:inbox_tray: {len(rest)} notifications*", [])
-    for n in rest:
-        if current.items and len(current.text) + len(n.text) + 2 > MAX_MESSAGE_CHARS:
+    for b in blocks:
+        if current.items and len(current.text) + len(b.text) + 2 > MAX_MESSAGE_CHARS:
             chunks.append(current)
             current = Message("", [])
-        current.text = f"{current.text}\n\n{n.text}" if current.text else n.text
-        current.items.append(n)
+        current.text = f"{current.text}\n\n{b.text}" if current.text else b.text
+        current.items += b.items
     chunks.append(current)
     return system + chunks
 

@@ -115,9 +115,11 @@ class RunnerTest(unittest.TestCase):
             {"id": 4, "created_at": RECENT, "author": alice, "body": "approved this merge request", "system": True},
         ]
         self.notifier().run_once()
-        self.assertEqual(len(self.slack.sent), 2)
-        self.assertIn("Comment", self.slack.sent[0])
-        self.assertIn("Approved", self.slack.sent[1])
+        self.assertEqual(len(self.slack.sent), 1)  # same MR: grouped in one message
+        msg = self.slack.sent[0]
+        self.assertEqual(msg.count("p!7 Some MR"), 1)
+        self.assertLess(msg.index("Comment"), msg.index("Approved"))
+        self.assertNotIn("look", msg)  # mention: comes through the to-do list
 
     def test_merge_of_my_mr_is_reported(self):
         self.notifier().run_once()

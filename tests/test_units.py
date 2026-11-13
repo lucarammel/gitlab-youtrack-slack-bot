@@ -113,6 +113,35 @@ class DeliveryTest(unittest.TestCase):
         self.assertIn("3 notifications", msgs[1].text)
         self.assertIn("m2", msgs[1].text)
 
+    def test_compose_groups_by_subject(self):
+        s1, s2 = "<https://x/1|p!1 One>", "<https://x/2|p!2 Two>"
+        items = [
+            n(text=f"*Comment* by A\n{s1}\n> a", subject=s1),
+            n(text=f"*Approved* by B\n{s2}", subject=s2),
+            n(text=f"*Comment* by C\n{s1}\n> c", subject=s1),
+            n(text="no subject"),
+        ]
+        msgs = compose(items, batch_threshold=0)
+        self.assertEqual(
+            [m.text for m in msgs],
+            [f"{s1}\n*Comment* by A\n> a\n*Comment* by C\n> c", f"*Approved* by B\n{s2}", "no subject"],
+        )
+        self.assertEqual(len(msgs[0].items), 2)
+
+    def test_compose_digest_counts_groups_not_notifications(self):
+        s = "<https://x/1|p!1 One>"
+        items = [n(text=f"*Comment* {i}\n{s}", subject=s) for i in range(6)]
+        self.assertEqual(len(compose(items, batch_threshold=2)), 1)
+        self.assertNotIn("notifications*", compose(items, batch_threshold=2)[0].text)
+
+    def test_compose_splits_huge_groups(self):
+        s = "<https://x/1|p!1 One>"
+        items = [n(text=f"*Comment*\n{s}\n> " + "x" * 1000, subject=s) for _ in range(10)]
+        msgs = compose(items, batch_threshold=0)
+        self.assertGreater(len(msgs), 1)
+        self.assertTrue(all(m.text.startswith(s) and len(m.text) <= 3500 for m in msgs))
+        self.assertEqual(sum(len(m.items) for m in msgs), 10)
+
     def test_compose_digest_chunks_long_messages(self):
         items = [n(text="x" * 1000) for _ in range(10)]
         msgs = compose(items, batch_threshold=2)

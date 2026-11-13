@@ -54,7 +54,8 @@ stale_review_days = 2          # MRs awaiting your review for >= N days get an :
 quiet_weekends = false
 # Kinds delivered even during quiet hours (see muted_kinds for the list):
 quiet_bypass = []              # ["review_requested", "directly_addressed"]
-# When at least this many notifications are pending at once, merge them into one digest (0 = never).
+# When at least this many messages are pending at once (after grouping by MR / issue), merge them
+# into one digest (0 = never).
 batch_threshold = 5
 # After N consecutive failed polls (VPN down, GitLab unreachable...), post an alert, then a "back
 # online" message on recovery (0 = never).
