@@ -63,6 +63,15 @@ class RunnerTest(unittest.TestCase):
         self.assertIn("Comment", self.slack.sent[0])
         self.assertIn("Approved", self.slack.sent[1])
 
+    def test_merge_of_my_mr_is_reported(self):
+        self.notifier().run_once()
+        alice = {"id": 2, "username": "alice", "name": "Alice"}
+        self.gl.merged_mrs = [mr(101, 8, author=ME, state="merged")]
+        self.gl.notes[8] = [{"id": 9, "created_at": RECENT, "author": alice, "body": "merged", "system": True}]
+        self.notifier().run_once()
+        self.assertEqual(len(self.slack.sent), 1)
+        self.assertIn("Merged", self.slack.sent[0])
+
     def test_morning_greeting_once_a_day(self):
         self.notifier().run_once()
         self.gl.review_mrs = [mr(200, 9)]

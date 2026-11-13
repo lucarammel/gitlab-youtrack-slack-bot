@@ -30,6 +30,7 @@ class FakeGitLab:
         self.todos: list[dict] = []
         self.project_mrs: dict[str, list[dict]] = {}
         self.my_mrs: list[dict] = []
+        self.merged_mrs: list[dict] = []
         self.review_mrs: list[dict] = []
         self.notes: dict[int, list[dict]] = {}
 
@@ -42,8 +43,11 @@ class FakeGitLab:
     def project_open_mrs(self, project, created_after):
         return self.project_mrs.get(project, [])
 
-    def my_open_mrs(self, updated_after=None):
+    def my_open_mrs(self):
         return self.my_mrs
+
+    def my_mrs_updated_after(self, updated_after):
+        return self.my_mrs + self.merged_mrs
 
     def mrs_to_review(self, username):
         return self.review_mrs

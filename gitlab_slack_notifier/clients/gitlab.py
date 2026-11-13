@@ -50,8 +50,12 @@ class GitLab:
             sort="asc",
         )
 
-    def my_open_mrs(self, updated_after: str | None = None) -> list[dict]:
-        return self.get("/merge_requests", scope="created_by_me", state="opened", updated_after=updated_after)
+    def my_open_mrs(self) -> list[dict]:
+        return self.get("/merge_requests", scope="created_by_me", state="opened")
+
+    def my_mrs_updated_after(self, updated_after: str) -> list[dict]:
+        """All your MRs (open, merged, closed) updated recently."""
+        return self.get("/merge_requests", scope="created_by_me", state="all", updated_after=updated_after)
 
     def mrs_to_review(self, username: str) -> list[dict]:
         return self.get("/merge_requests", reviewer_username=username, state="opened", scope="all")

@@ -1,4 +1,4 @@
-"""Comments, approvals and merges on your own open merge requests."""
+"""Comments, approvals and merges on your own merge requests."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ def collect(ctx: Context) -> list[Notification]:
     me = ctx.me
     seen = ctx.state.seen(SEEN_KEY)
     out = []
-    for mr in ctx.gl.my_open_mrs(updated_after=ctx.since):
+    for mr in ctx.gl.my_mrs_updated_after(ctx.since):
         mr_link = link(mr["web_url"], f"{mr['references']['full']} {mr['title']}")
         for n in ctx.gl.latest_mr_notes(mr["project_id"], mr["iid"]):
             if n["id"] in seen or parse_ts(n["created_at"]) < since:
