@@ -42,7 +42,7 @@ Polling (not GitLab webhooks) so it works from a laptop behind the VPN. Python 3
      4. **Publish**, copy the `https://hooks.slack.com/triggers/…` URL into `SLACK_WORKFLOW_URL`
         (a `/triggers/` URL in `SLACK_WEBHOOK_URL` is detected and works too).
 
-     Links show up as `title (url)` because workflow variables don't render Slack link markup.
+     Links show up as `title — url` because workflow variables don't render Slack link markup.
      If `--test-slack` fails with `workflow_not_published`, (re)publish the workflow — any edit
      after publishing needs a new publish.
 3. **YouTrack token** (optional): YouTrack → Profile → Account Security → *New token* (scope YouTrack)

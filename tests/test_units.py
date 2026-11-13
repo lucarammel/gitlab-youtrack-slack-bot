@@ -26,7 +26,7 @@ class FormattingTest(unittest.TestCase):
         self.assertFalse(mentions("ping @me.bot", "me"))
 
     def test_to_plain(self):
-        self.assertEqual(to_plain(":tada: <https://x|A &amp; B>"), "🎉 A & B (https://x)")
+        self.assertEqual(to_plain(":tada: <https://x|A &amp; B>"), "🎉 A & B — https://x")
 
 
 class ConfigTest(unittest.TestCase):

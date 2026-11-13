@@ -29,9 +29,10 @@ def snippet(body: str, n: int = 200) -> str:
 
 def to_plain(text: str) -> str:
     """Workflow Builder variables render neither <url|label> links nor :emoji: shortcodes:
-    turn links into 'label (url)' and shortcodes into Unicode emoji."""
+    turn links into 'label — url' and shortcodes into Unicode emoji. No brackets around the url:
+    Slack's autolinker would include a closing one in the link."""
     text = re.sub(r":([a-z_]+):", lambda m: EMOJI.get(m.group(1), m.group(0)), text)
-    text = re.sub(r"<([^|>]+)\|([^>]*)>", r"\2 (\1)", text)
+    text = re.sub(r"<([^|>]+)\|([^>]*)>", r"\2 — \1", text)
     return text.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
 
 
