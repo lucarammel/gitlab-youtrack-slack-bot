@@ -55,9 +55,10 @@ Polling (not GitLab webhooks) so it works from a laptop behind the VPN. Python 3
    ./notifier.py --test-slack           # checks Slack
    ./notifier.py --dry-run              # checks GitLab, prints instead of posting
    ./notifier.py                        # first real run: records existing items, sends nothing
+   ./notifier.py --status               # last run, pending/held notifications, health
    ```
 
-   `--flush` delivers held notifications immediately, ignoring quiet hours.
+   `--flush` delivers held notifications immediately, ignoring quiet hours. `-v` enables debug logs.
 
 ## Running
 
