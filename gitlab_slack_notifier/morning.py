@@ -7,7 +7,7 @@ from datetime import datetime
 
 from .clients import GitLab, YouTrack
 from .config import Config
-from .formatting import esc
+from .formatting import age_days, esc, link
 from .http import ApiError
 from .models import Notification
 from .state import State
@@ -15,6 +15,7 @@ from .state import State
 log = logging.getLogger(__name__)
 
 KEY = "last_greeting"
+MAX_LISTED = 5
 
 
 def due(state: State, cfg: Config, now: datetime) -> bool:
@@ -30,7 +31,26 @@ def mark_sent(state: State, now: datetime) -> None:
     state.data[KEY] = now.date().isoformat()
 
 
-def message(gl: GitLab, yt: YouTrack | None, me: dict, held: int = 0) -> Notification:
+def _mr_line(mr: dict, stale_days: int) -> str:
+    days = age_days(mr["created_at"])
+    stale = " :hourglass:" if stale_days and days >= stale_days else ""
+    draft = " _(draft)_" if mr.get("draft") else ""
+    ref = mr.get("references", {}).get("full") or f"!{mr['iid']}"
+    label = f"{ref} {mr['title']}"
+    return f"    – {link(mr['web_url'], label)}{draft} · {days} j{stale}"
+
+
+def _mr_section(header: str, mrs: list[dict], stale_days: int) -> list[str]:
+    if not mrs:
+        return [header]
+    mrs = sorted(mrs, key=lambda m: m["created_at"])  # oldest first: they need attention
+    lines = [header + " :"] + [_mr_line(m, stale_days) for m in mrs[:MAX_LISTED]]
+    if len(mrs) > MAX_LISTED:
+        lines.append(f"    – … et {len(mrs) - MAX_LISTED} autre(s)")
+    return lines
+
+
+def message(gl: GitLab, yt: YouTrack | None, me: dict, cfg: Config, held: int = 0) -> Notification:
     first = (me.get("name") or me["username"]).split()[0]
     lines = [f"*:sunny: Bonjour {esc(first)} !*"]
     try:
@@ -38,8 +58,8 @@ def message(gl: GitLab, yt: YouTrack | None, me: dict, held: int = 0) -> Notific
         reviews = gl.mrs_to_review(me["username"])
         mine = gl.my_open_mrs()
         lines.append(f"• {len(todos)} to-do GitLab en attente")
-        lines.append(f"• {len(reviews)} MR en attente de ta review")
-        lines.append(f"• {len(mine)} MR ouverte(s) à toi")
+        lines += _mr_section(f"• {len(reviews)} MR en attente de ta review", reviews, cfg.stale_review_days)
+        lines += _mr_section(f"• {len(mine)} MR ouverte(s) à toi", mine, 0)
         if yt:
             issues = yt.search_issues("for: me #Unresolved")
             lines.append(f"• {len(issues)} issue(s) YouTrack non résolue(s) assignée(s) à toi")

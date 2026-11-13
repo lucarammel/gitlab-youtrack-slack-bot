@@ -46,6 +46,7 @@ youtrack_fields = ["State", "Priority", "Activity"]
 morning_greeting = true
 morning_hour = 8
 morning_weekdays_only = true
+stale_review_days = 2          # MRs awaiting your review for >= N days get an :hourglass: in the summary
 
 # --- Delivery ---
 # Quiet hours (local time): notifications are held, then delivered when they end (as a digest if many).

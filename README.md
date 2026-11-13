@@ -9,8 +9,8 @@ Polls GitLab and posts to a Slack conversation when:
   a change on a field listed in `youtrack_fields` (State, Priority, Activity…), or is created
 
 Plus a morning greeting (once a day, first poll after `morning_hour`, weekdays) confirming the service
-is up, with a short summary: pending GitLab to-dos, MRs awaiting your review, your open MRs, your
-unresolved YouTrack issues.
+is up, with a short summary: pending GitLab to-dos, MRs awaiting your review (oldest first, with their
+age and an :hourglass: past `stale_review_days`), your open MRs, your unresolved YouTrack issues.
 
 Delivery features (see comments in `config.example.toml`):
 - **Quiet hours** (`quiet_hours = "19:00-08:30"`, `quiet_weekends`): notifications are held and

@@ -74,7 +74,7 @@ class Notifier:
 
         if morning.due(state, self.cfg, now):
             held = len(state.outbox) + len(fresh) if is_quiet(now, self.cfg) else 0
-            fresh.insert(0, morning.message(self.gl, self.yt, me, held=held))
+            fresh.insert(0, morning.message(self.gl, self.yt, me, self.cfg, held=held))
             morning.mark_sent(state, now)
 
         state.last_run = started

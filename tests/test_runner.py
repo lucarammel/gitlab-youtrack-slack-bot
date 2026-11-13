@@ -128,14 +128,15 @@ class RunnerTest(unittest.TestCase):
         self.assertEqual(len(self.slack.sent), 1)
         self.assertIn("Merged", self.slack.sent[0])
 
-    def test_morning_greeting_once_a_day(self):
+    def test_morning_greeting_lists_stale_reviews(self):
         self.notifier().run_once()
-        self.gl.review_mrs = [mr(200, 9)]
+        self.gl.review_mrs = [mr(200, 9, title="Old one", created_at="2026-01-01T00:00:00Z")]
         self.notifier(morning_greeting=True).run_once()
         self.notifier(morning_greeting=True).run_once()
         self.assertEqual(len(self.slack.sent), 1)
         self.assertIn("Bonjour Lucas", self.slack.sent[0])
-        self.assertIn("1 MR en attente de ta review", self.slack.sent[0])
+        self.assertIn("Old one", self.slack.sent[0])
+        self.assertIn(":hourglass:", self.slack.sent[0])
 
 
 if __name__ == "__main__":

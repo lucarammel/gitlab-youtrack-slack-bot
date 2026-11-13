@@ -52,6 +52,7 @@ class Config:
     morning_greeting: bool = True
     morning_hour: int = 8
     morning_weekdays_only: bool = True
+    stale_review_days: int = 2
 
     # --- Delivery ---
     quiet_hours: str | None = None  # "19:00-08:30": notifications are held, then sent as a digest

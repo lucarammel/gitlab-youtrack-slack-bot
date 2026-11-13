@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 
 EMOJI = {
     "arrows_counterclockwise": "🔄", "bookmark": "🔖", "bust_in_silhouette": "👤", "coffee": "☕",
-    "electric_plug": "🔌", "eyes": "👀", "inbox_tray": "📥", "key": "🔑",
+    "electric_plug": "🔌", "eyes": "👀", "hourglass": "⏳", "inbox_tray": "📥", "key": "🔑",
     "large_green_circle": "🟢", "new": "🆕", "no_entry_sign": "🚫", "red_circle": "🔴",
     "rotating_light": "🚨", "speech_balloon": "💬", "sunny": "☀️", "tada": "🎉", "warning": "⚠️",
     "wave": "👋", "white_check_mark": "✅", "white_circle": "⚪", "x": "❌",
@@ -42,3 +42,8 @@ def mentions(body: str, username: str) -> bool:
 
 def parse_ts(ts: str) -> datetime:
     return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+
+
+def age_days(ts: str, now: datetime | None = None) -> int:
+    now = now or datetime.now(timezone.utc)
+    return max(0, (now - parse_ts(ts)).days)
