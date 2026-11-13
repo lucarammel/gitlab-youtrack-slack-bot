@@ -5,7 +5,7 @@ Polls GitLab and posts to a Slack conversation when:
 - a new MR is opened on a watched project
 - someone comments on / approves / merges one of your MRs
 - YouTrack (optional): you're mentioned or assigned, or an issue that concerns you gets a comment,
-  a State/Priority change, or is created
+  a change on a field listed in `youtrack_fields` (State, Priority, Activity…), or is created
 
 Polling (not GitLab webhooks) so it works from a laptop behind the VPN. Python 3.11+, no dependencies.
 

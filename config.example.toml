@@ -26,4 +26,4 @@ notify_youtrack = true
 # Mentions (@you in a comment) and assignments to you are always forwarded, on any issue.
 youtrack_query = "for: me or reporter: me or commenter: me or tag: Star"
 # Field changes to report on those issues:
-youtrack_fields = ["State", "Priority"]
+youtrack_fields = ["State", "Priority", "Activity"]
