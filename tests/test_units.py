@@ -4,7 +4,7 @@ from datetime import datetime
 from gitlab_slack_notifier.config import Config, ConfigError
 from gitlab_slack_notifier.delivery import Deliverer, compose, is_quiet
 from gitlab_slack_notifier.filters import NotificationFilter
-from gitlab_slack_notifier.formatting import mentions, to_plain
+from gitlab_slack_notifier.formatting import mentions, snippet, to_plain
 from gitlab_slack_notifier.models import Notification
 
 from .fakes import make_config
@@ -27,6 +27,17 @@ class FormattingTest(unittest.TestCase):
 
     def test_to_plain(self):
         self.assertEqual(to_plain(":tada: <https://x|A &amp; B>"), "🎉 A & B — https://x")
+
+    def test_snippet_strips_markdown(self):
+        body = (
+            "## SonarQube Code Analysis\n## Quality Gate passed\n"
+            "Issues [![](https://s/passed-16px.png '')](https://s/x) 0 New issues\n"
+            "- see **[the docs](https://d)**\n| a | b |\n|---|---|\n<details>`x = 1`</details> `test__run`"
+        )
+        self.assertEqual(
+            snippet(body),
+            "SonarQube Code Analysis Quality Gate passed Issues 0 New issues see the docs a b x = 1 test__run",
+        )
 
     def test_to_plain_drops_mrkdwn_markers(self):
         text = "*:new: New MR* in `my-project` _(draft)_\n<https://x/deal_method_a|fix deal_method>\n> quoted"

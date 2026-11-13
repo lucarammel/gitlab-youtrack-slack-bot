@@ -22,8 +22,19 @@ def link(url: str, text: str) -> str:
     return f"<{url}|{esc(text)}>"
 
 
+def strip_markdown(body: str) -> str:
+    """Reduce a GitLab / YouTrack markdown comment to readable text for a one-line preview."""
+    body = re.sub(r"```.*?```", " ", body, flags=re.S)  # code blocks
+    body = re.sub(r"<!--.*?-->|<[^>\n]+>", " ", body, flags=re.S)  # HTML comments and tags
+    body = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", body)  # images
+    body = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", body)  # links -> their text
+    body = re.sub(r"(?m)^\s*(#{1,6}|>|[-*+]|\d+\.)\s+", "", body)  # headings, quotes, list bullets
+    body = re.sub(r"(?m)^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$", "", body)  # table separator rows
+    return re.sub(r"\*\*|~~|`|\|", " ", body)  # emphasis, code, table pipes (not "__": dunder names)
+
+
 def snippet(body: str, n: int = 200) -> str:
-    body = " ".join(body.split())
+    body = " ".join(strip_markdown(body).split())
     return esc(body if len(body) <= n else body[: n - 1] + "…")
 
 
