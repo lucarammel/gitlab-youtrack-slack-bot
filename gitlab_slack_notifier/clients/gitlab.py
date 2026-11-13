@@ -30,6 +30,11 @@ class GitLab:
                 return out
             page = int(nxt)
 
+    def get_page(self, path: str, **params) -> list | dict:
+        """GET a single page (for "latest N" queries)."""
+        data, _ = request_json(self._url(path, params), headers=self.headers)
+        return data
+
     @staticmethod
     def project_id(path_or_id: str | int) -> str:
         return urllib.parse.quote(str(path_or_id), safe="")
@@ -62,7 +67,7 @@ class GitLab:
 
     def latest_mr_notes(self, project_id: int, iid: int, limit: int = 50) -> list[dict]:
         """Most recent notes, oldest first."""
-        notes = self.get(
+        notes = self.get_page(
             f"/projects/{project_id}/merge_requests/{iid}/notes",
             sort="desc",
             order_by="created_at",
