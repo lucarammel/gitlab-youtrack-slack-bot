@@ -9,6 +9,7 @@ import tomllib
 from dataclasses import dataclass, field
 from datetime import time
 from pathlib import Path
+from typing import Mapping
 
 log = logging.getLogger(__name__)
 
@@ -90,18 +91,22 @@ class Config:
         known = {f.name for f in dataclasses.fields(cls)}
         for key in sorted(set(data) - known):
             log.warning("config: unknown key %r ignored (typo?)", key)
-        if "gitlab_url" not in data:
-            raise ConfigError("config: gitlab_url is required")
+        if not data.get("gitlab_url"):
+            raise ConfigError("config: gitlab_url is required (or set GITLAB_URL)")
         try:
             return cls(**{k: v for k, v in data.items() if k in known})
         except TypeError as e:
             raise ConfigError(f"config: {e}") from None
 
     @classmethod
-    def load(cls, path: Path) -> Config:
+    def load(cls, path: Path, env: Mapping[str, str] | None = None) -> Config:
+        """Load `path`; GITLAB_URL in `env` overrides gitlab_url."""
         try:
-            return cls.from_dict(tomllib.loads(path.read_text()))
+            data = tomllib.loads(path.read_text())
         except FileNotFoundError:
-            raise ConfigError(f"{path} not found (cp config.example.toml config.toml)") from None
+            raise ConfigError(f"{path} not found: run `gitlab-slack-notifier init` to create it") from None
         except tomllib.TOMLDecodeError as e:
             raise ConfigError(f"{path}: {e}") from None
+        if env and env.get("GITLAB_URL"):
+            data["gitlab_url"] = env["GITLAB_URL"]
+        return cls.from_dict(data)

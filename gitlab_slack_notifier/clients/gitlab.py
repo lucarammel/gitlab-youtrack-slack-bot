@@ -43,6 +43,17 @@ class GitLab:
     def current_user(self) -> dict:
         return self.get("/user")
 
+    def recent_projects(self, limit: int = 100) -> list[str]:
+        """Paths of the projects of your latest MRs (authored or reviewed), most active first."""
+        counts: dict[str, int] = {}
+        for scope in ({"scope": "created_by_me"}, {"scope": "all", "reviewer_id": self.current_user()["id"]}):
+            for mr in self.get_page("/merge_requests", state="all", order_by="updated_at", per_page=limit, **scope):
+                ref = (mr.get("references") or {}).get("full", "")
+                path = ref.rpartition("!")[0]
+                if path:
+                    counts[path] = counts.get(path, 0) + 1
+        return sorted(counts, key=lambda p: -counts[p])
+
     def pending_todos(self) -> list[dict]:
         return self.get("/todos", state="pending")
 

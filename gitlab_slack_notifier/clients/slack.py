@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import urllib.parse
+
 from ..formatting import to_plain
 from ..http import ApiError, request, request_json
 
@@ -23,6 +25,17 @@ class Slack:
         self.webhook_url = webhook_url
         self.bot_token = bot_token
         self.channel = channel
+
+    @staticmethod
+    def lookup_user_id(bot_token: str, email: str) -> str:
+        """Slack member ID for `email` (the bot needs the `users:read.email` scope)."""
+        data, _ = request_json(
+            "https://slack.com/api/users.lookupByEmail?" + urllib.parse.urlencode({"email": email}),
+            headers={"Authorization": f"Bearer {bot_token}"},
+        )
+        if not data.get("ok"):
+            raise ApiError(f"Slack users.lookupByEmail({email}): {data.get('error')}")
+        return data["user"]["id"]
 
     @property
     def mode(self) -> str:

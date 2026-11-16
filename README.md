@@ -28,81 +28,100 @@ Delivery features (see comments in `config.example.toml`):
   Slack alert, then a "back online" message once polling works again.
 
 Polling (not GitLab webhooks) so it works from a laptop behind the VPN. Python 3.11+, no dependencies.
+Linux, WSL and macOS.
 
-## Setup
-
-1. **GitLab token**: User settings → Access tokens → scope `read_api`.
-2. **Slack** (pick one):
-   - **Bot** (recommended, can DM you): https://api.slack.com/apps → Create app → OAuth & Permissions →
-     bot scope `chat:write` → Install → copy `xoxb-…` token. Set `slack_channel` to your member ID
-     (Profile → ⋮ → Copy member ID) to get DMs, or to a channel ID after `/invite @yourapp` in it.
-   - **Incoming webhook**: app → Incoming Webhooks → add to a channel → copy the URL.
-   - **Workflow Builder** (no app needed — use this if you can't create Slack apps; paid plans only):
-     1. Slack → Tools → Workflow Builder → New workflow → *Start from a webhook*.
-     2. *Set up variables* → add a variable named `text` (type: Text).
-     3. Add step *Messages → Send a message to a person* (pick yourself) or *to a channel*;
-        message body = the `text` variable.
-     4. **Publish**, copy the `https://hooks.slack.com/triggers/…` URL into `SLACK_WORKFLOW_URL`
-        (a `/triggers/` URL in `SLACK_WEBHOOK_URL` is detected and works too).
-
-     Links show up as `title — url` because workflow variables don't render Slack link markup.
-     If `--test-slack` fails with `workflow_not_published`, (re)publish the workflow — any edit
-     after publishing needs a new publish.
-3. **YouTrack token** (optional): YouTrack → Profile → Account Security → *New token* (scope YouTrack)
-   → `YOUTRACK_TOKEN` in `.env`. Tune `youtrack_query` / `youtrack_fields` in `config.toml`.
-4. Configure:
-   ```sh
-   cp config.example.toml config.toml   # edit projects / channel
-   cp .env.example .env                 # fill in tokens
-   set -a; . ./.env; set +a
-   python3 -m gitlab_slack_notifier --test-slack  # checks Slack
-   python3 -m gitlab_slack_notifier --dry-run     # checks GitLab, prints instead of posting
-   python3 -m gitlab_slack_notifier               # first real run: records existing items, sends nothing
-   python3 -m gitlab_slack_notifier --status      # last run, pending/held notifications, health
-   ```
-
-   `--flush` delivers held notifications immediately, ignoring quiet hours. `-v` enables debug logs.
-
-## Running
-
-### Start automatically with WSL / Linux (systemd user service — recommended)
-
-Requires systemd (on WSL: `[boot] systemd=true` in `/etc/wsl.conf`). The unit file
-[`gitlab-slack-notifier.service`](gitlab-slack-notifier.service) loads `.env` and runs
-`python3 -m gitlab_slack_notifier --loop 120`, restarting on failure. It assumes the repo is at `~/repos/gitlab-slack-notifier`
-(edit `WorkingDirectory` otherwise).
+## Quick start
 
 ```sh
-mkdir -p ~/.config/systemd/user
-cp gitlab-slack-notifier.service ~/.config/systemd/user/
-systemctl --user daemon-reload
-systemctl --user enable --now gitlab-slack-notifier
-loginctl enable-linger "$USER"   # start at boot, without an interactive login
+# 1. Install (uv fetches Python 3.11+ if needed: https://docs.astral.sh/uv/getting-started/installation/)
+uv tool install git+https://github.com/lucarammel/gitlab-youtrack-slack-bot
+
+# 2. Set up: asks for your tokens and checks each one, sends a Slack test message,
+#    suggests projects to watch, then offers to start the background service.
+gitlab-slack-notifier init
 ```
+
+That's it. Everything lives in `~/.config/gitlab-slack-notifier/` (`config.toml`, `secrets.env`,
+`state.json`). The first run records what already exists and sends nothing; later runs notify what's new.
+
+What `init` asks for:
+- **GitLab token**: avatar → Edit profile → Access tokens → scope `read_api`.
+- **Slack**: the team bot token (see [below](#team-slack-app-one-time-for-the-whole-team)); your DM is
+  found from your GitLab email. No app? Use a Workflow Builder URL instead (see [Slack options](#slack-options)).
+- **YouTrack token** (optional): Profile → Account Security → *New token* (scope YouTrack).
+
+Tip: put `GITLAB_URL=https://gitlab.your-company.com` in your team's onboarding doc (or export it before
+`init`) so it's pre-filled.
 
 Day-to-day:
 
 ```sh
-journalctl --user -u gitlab-slack-notifier -f        # follow logs
-systemctl --user restart gitlab-slack-notifier       # after editing .env or config.toml
-systemctl --user stop gitlab-slack-notifier          # stop
-systemctl --user disable --now gitlab-slack-notifier # don't start at boot anymore
+gitlab-slack-notifier --status          # last run, pending/held notifications, health
+gitlab-slack-notifier --flush           # deliver held notifications now, ignoring quiet hours
+gitlab-slack-notifier init              # change tokens / projects (current values are the defaults)
+gitlab-slack-notifier install-service   # (re)install the background service
+gitlab-slack-notifier uninstall-service # stop it
+uv tool upgrade gitlab-slack-notifier   # update, then: gitlab-slack-notifier install-service
 ```
 
-On WSL, the VM shuts down after a while with no WSL window open; the service starts again the
-next time WSL boots.
+Logs: `journalctl --user -u gitlab-slack-notifier -f` (Linux / WSL),
+`tail -f ~/.config/gitlab-slack-notifier/notifier.log` (macOS).
+Fine-tuning (quiet hours, ignore rules, YouTrack fields…): edit `config.toml`, options documented in
+[`config.example.toml`](config.example.toml), then `gitlab-slack-notifier install-service` to restart.
 
-### Alternatives
+## Team Slack app (one time, for the whole team)
 
-- In a terminal / tmux: `python3 -m gitlab_slack_notifier --loop 120`
-- Cron (every 2 min): `*/2 * * * * cd ~/repos/gitlab-slack-notifier && . ./.env && python3 -m gitlab_slack_notifier >> notifier.log 2>&1`
+One Slack app serves everybody: each person gets DMs from it, matched by their GitLab email.
+
+1. https://api.slack.com/apps → *Create New App* → *From a manifest* → paste
+   [`slack-app-manifest.yml`](slack-app-manifest.yml) → *Install to workspace* (may need a Slack admin's approval).
+2. Copy the *Bot User OAuth Token* (`xoxb-…`) and share it with the team through a password manager
+   (not Slack / email). Anyone with it can post as the app, nothing more: it can't read messages.
+
+## Slack options
+
+- **Team bot** (above): DMs, nothing to set up per person. If your Slack email differs from your
+  GitLab one, set `SLACK_EMAIL` in `secrets.env`, or `slack_channel` (your member ID, or a channel ID
+  after `/invite @GitLab Notifier`) in `config.toml`.
+- **Workflow Builder** (no app needed; paid plans only):
+  1. Slack → Tools → Workflow Builder → New workflow → *Start from a webhook*.
+  2. *Set up variables* → add a variable named `text` (type: Text).
+  3. Add step *Messages → Send a message to a person* (pick yourself) or *to a channel*;
+     message body = the `text` variable.
+  4. **Publish**, copy the `https://hooks.slack.com/triggers/…` URL.
+
+  Links show up as `title — url` because workflow variables don't render Slack link markup.
+  If the test fails with `workflow_not_published`, (re)publish the workflow — any edit after
+  publishing needs a new publish.
+- **Incoming webhook**: an app → Incoming Webhooks → add to a channel → copy the URL.
+
+## Configuration reference
+
+The config directory is, in order: `--home DIR`, `$NOTIFIER_HOME`, the current directory if it
+contains a `config.toml` (running from a clone), else `~/.config/gitlab-slack-notifier`.
+
+Secrets are read from the environment, then from `secrets.env` / `.env` in that directory
+(see [`.env.example`](.env.example)): `GITLAB_TOKEN`, `SLACK_BOT_TOKEN` (+ optional `SLACK_CHANNEL`,
+`SLACK_EMAIL`), `SLACK_WORKFLOW_URL`, `SLACK_WEBHOOK_URL`, `YOUTRACK_TOKEN`. `GITLAB_URL` overrides
+`gitlab_url`.
+
+Other flags: `--dry-run` (print instead of posting, don't save state), `--test-slack`,
+`--loop SECONDS`, `-v` (debug logs). `install-service` runs a systemd user unit on Linux / WSL
+(WSL needs `[boot] systemd=true` in `/etc/wsl.conf`) or a launchd agent on macOS. On WSL, the VM
+shuts down a while after the last WSL window closes; the service starts again with WSL.
+
+Without the service: `gitlab-slack-notifier --loop 120` in a terminal / tmux, or cron
+(`*/2 * * * * ~/.local/bin/gitlab-slack-notifier >> /tmp/notifier.log 2>&1`).
 
 ## Development
 
 ```
 gitlab_slack_notifier/
-  __main__.py                    # entry point: python3 -m gitlab_slack_notifier (run from the repo root)
+  __main__.py                    # python3 -m gitlab_slack_notifier (also the `gitlab-slack-notifier` script)
   cli.py                         # argument parsing, main loop
+  paths.py                       # config directory resolution, secrets.env loading
+  wizard.py                      # `init`: interactive setup
+  service.py                     # `install-service`: systemd / launchd
   runner.py                      # one cycle: collect → filter → outbox → deliver → save state
   config.py                      # typed Config (dataclass) + validation
   state.py                       # state.json: seen ids, outbox, last run
@@ -118,5 +137,7 @@ gitlab_slack_notifier/
 tests/                           # stdlib unittest, with fake clients
 ```
 
-Run the tests with `python3 -m unittest`. To add a source: write `collectors/<name>.py` exposing
+From a clone: `python3 -m gitlab_slack_notifier …` uses the clone's code (and `./config.toml` if
+present); `uv tool install --editable .` installs the command from it. Run the tests with
+`python3 -m unittest`. To add a source: write `collectors/<name>.py` exposing
 `collect(ctx) -> list[Notification]`, then register it in `COLLECTORS`.

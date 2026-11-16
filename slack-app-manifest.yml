@@ -1,0 +1,22 @@
+# Slack → https://api.slack.com/apps → Create New App → From a manifest → paste this file.
+display_information:
+  name: GitLab Notifier
+  description: Your GitLab / YouTrack notifications, as DMs.
+  background_color: "#554488"
+features:
+  bot_user:
+    display_name: GitLab Notifier
+    always_online: false
+  app_home:
+    messages_tab_enabled: true
+    messages_tab_read_only_enabled: true
+oauth_config:
+  scopes:
+    bot:
+      - chat:write        # post the notifications
+      - users:read        # required by users:read.email
+      - users:read.email  # find each user's DM from their GitLab email
+settings:
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false

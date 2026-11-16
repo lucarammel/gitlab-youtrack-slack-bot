@@ -1,0 +1,23 @@
+[project]
+name = "gitlab-slack-notifier"
+dynamic = ["version"]
+description = "Poll GitLab (and YouTrack) and post the notifications that matter to Slack."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+gitlab-slack-notifier = "gitlab_slack_notifier.cli:main"
+
+[project.urls]
+Repository = "https://github.com/lucarammel/gitlab-youtrack-slack-bot"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "gitlab_slack_notifier/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["gitlab_slack_notifier"]
