@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
-from . import health, morning
+from . import health, morning, recap
 from .clients import GitLab, Slack, YouTrack
 from .collectors import COLLECTORS, Context
 from .config import Config
@@ -76,6 +76,13 @@ class Notifier:
             held = len(state.outbox) + len(fresh) if is_quiet(now, self.cfg) else 0
             fresh.insert(0, morning.message(self.gl, self.yt, me, self.cfg, held=held))
             morning.mark_sent(state, now)
+        for period in recap.due(state, self.cfg, now):
+            try:
+                fresh.append(recap.message(self.gl, me, period))
+            except (ApiError, KeyError) as e:  # retried on the next poll; don't block notifications
+                log.warning("%s recap unavailable: %s", period.kind, e)
+                continue
+            recap.mark_sent(state, period)
 
         state.last_run = started
         return fresh

@@ -36,6 +36,8 @@ class FakeGitLab:
         self.discussions: dict[int, list[dict]] = {}
         self.notes: dict[int, list[dict]] = {}
         self.pipelines: dict[int, dict] = {}
+        self.events: list[dict] = []
+        self.recap_merged: list[dict] = []
         self.fail = False
 
     def _check(self):
@@ -75,6 +77,16 @@ class FakeGitLab:
 
     def latest_mr_pipeline(self, project_id, iid):
         return self.pipelines.get(iid)
+
+    def user_events(self, user_id, after, before):
+        return self.events
+
+    def my_merged_mrs(self, updated_after):
+        return self.recap_merged
+
+    def project(self, project_id):
+        return {"id": project_id, "name": f"proj{project_id}", "path": f"proj{project_id}",
+                "web_url": f"https://gitlab.example.com/g/proj{project_id}"}
 
 
 class FakeSlack:

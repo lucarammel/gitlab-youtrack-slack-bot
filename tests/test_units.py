@@ -1,11 +1,14 @@
 import unittest
-from datetime import datetime
+from datetime import date, datetime
+from pathlib import Path
 
 from gitlab_slack_notifier.config import Config, ConfigError
 from gitlab_slack_notifier.delivery import Deliverer, compose, is_quiet
 from gitlab_slack_notifier.filters import NotificationFilter
 from gitlab_slack_notifier.formatting import mentions, short_ref, snippet, to_plain
 from gitlab_slack_notifier.models import Notification
+from gitlab_slack_notifier.recap import due, mark_sent, previous
+from gitlab_slack_notifier.state import State
 
 from .fakes import make_config
 
@@ -171,6 +174,28 @@ class DeliveryTest(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             d.deliver(outbox, MONDAY_NOON)
         self.assertEqual([x.text for x in outbox], ["b"])
+
+
+class RecapPeriodTest(unittest.TestCase):
+    def test_previous_periods(self):
+        w = previous("week", date(2026, 11, 11))
+        self.assertEqual((w.start, w.end, w.key), (date(2026, 11, 2), date(2026, 11, 9), "2026-W45"))
+        m = previous("month", date(2026, 1, 15))
+        self.assertEqual((m.start, m.end, m.key), (date(2025, 12, 1), date(2026, 1, 1), "2025-12"))
+        self.assertEqual(m.title, "Récap du mois · décembre 2025")
+        self.assertEqual(previous("week", date(2026, 11, 4)).title, "Récap de la semaine · du 26 oct. au 1 nov.")
+
+    def test_due_once_per_period_on_weekdays(self):
+        cfg = make_config(morning_hour=8)
+        state = State(Path("unused"))
+        self.assertEqual(due(state, cfg, datetime(2026, 11, 9, 7, 0)), [])  # before morning_hour
+        self.assertEqual(due(state, cfg, SATURDAY_NOON), [])
+        periods = due(state, cfg, MONDAY_NOON)
+        self.assertEqual([p.kind for p in periods], ["week", "month"])
+        for p in periods:
+            mark_sent(state, p)
+        self.assertEqual(due(state, cfg, MONDAY_NOON), [])
+        self.assertEqual([p.kind for p in due(state, cfg, datetime(2026, 12, 1, 9, 0))], ["week", "month"])
 
 
 if __name__ == "__main__":

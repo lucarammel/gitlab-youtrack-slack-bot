@@ -6,8 +6,8 @@ import re
 from datetime import datetime, timezone
 
 EMOJI = {
-    "arrows_counterclockwise": "🔄", "bookmark": "🔖", "bust_in_silhouette": "👤", "coffee": "☕",
-    "electric_plug": "🔌", "eyes": "👀", "hourglass": "⏳", "inbox_tray": "📥", "key": "🔑",
+    "arrow_up": "⬆️", "arrows_counterclockwise": "🔄", "bar_chart": "📊", "bookmark": "🔖", "bust_in_silhouette": "👤", "calendar": "📅", "coffee": "☕",
+    "electric_plug": "🔌", "eyes": "👀", "file_folder": "📁", "hourglass": "⏳", "inbox_tray": "📥", "key": "🔑",
     "large_green_circle": "🟢", "new": "🆕", "no_entry_sign": "🚫", "red_circle": "🔴",
     "rotating_light": "🚨", "speech_balloon": "💬", "sunny": "☀️", "tada": "🎉", "warning": "⚠️",
     "wave": "👋", "white_check_mark": "✅", "white_circle": "⚪", "x": "❌",

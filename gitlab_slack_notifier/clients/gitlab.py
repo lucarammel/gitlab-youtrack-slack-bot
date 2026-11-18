@@ -98,3 +98,13 @@ class GitLab:
     def latest_mr_pipeline(self, project_id: int, iid: int) -> dict | None:
         pipelines = self.get_page(f"/projects/{project_id}/merge_requests/{iid}/pipelines", per_page=1)
         return pipelines[0] if pipelines else None
+
+    def user_events(self, user_id: int, after: str, before: str) -> list[dict]:
+        """Your contribution events between two dates (YYYY-MM-DD, both exclusive)."""
+        return self.get(f"/users/{user_id}/events", after=after, before=before, sort="asc")
+
+    def my_merged_mrs(self, updated_after: str) -> list[dict]:
+        return self.get("/merge_requests", scope="created_by_me", state="merged", updated_after=updated_after)
+
+    def project(self, project_id: int) -> dict:
+        return self.get(f"/projects/{project_id}", simple="true")

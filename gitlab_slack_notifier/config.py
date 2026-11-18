@@ -56,6 +56,10 @@ class Config:
     morning_weekdays_only: bool = True
     stale_review_days: int = 2
 
+    # --- Activity recaps (sent at morning_hour, for the last complete week / month) ---
+    weekly_recap: bool = True  # on Mondays
+    monthly_recap: bool = True  # on the 1st (next weekday if morning_weekdays_only)
+
     # --- Delivery ---
     quiet_hours: str | None = None  # "19:00-08:30": notifications are held, then sent as a digest
     quiet_weekends: bool = False

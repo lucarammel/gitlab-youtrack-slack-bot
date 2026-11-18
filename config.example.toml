@@ -49,6 +49,12 @@ morning_hour = 8
 morning_weekdays_only = true
 stale_review_days = 2          # MRs awaiting your review for >= N days get an :hourglass: in the summary
 
+# --- Activity recaps, sent at morning_hour for the last complete period: MRs merged (with average
+# time to merge) and opened, reviews (approvals, comments), commits pushed, active days, top repos.
+# Preview / send on demand: `gitlab-slack-notifier recap [week|month] [--dry-run]`.
+weekly_recap = true            # on Mondays, for the previous week
+monthly_recap = true           # on the 1st (next weekday if morning_weekdays_only), for the previous month
+
 # --- Delivery ---
 # Quiet hours (local time): notifications are held, then delivered when they end (as a digest if many).
 # quiet_hours = "19:00-08:30"

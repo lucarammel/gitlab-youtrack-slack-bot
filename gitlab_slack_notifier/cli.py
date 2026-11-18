@@ -11,7 +11,7 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
-from . import __version__, service, wizard
+from . import __version__, recap, service, wizard
 from .clients import GitLab, Slack, YouTrack
 from .config import Config, ConfigError
 from .delivery import is_quiet
@@ -54,6 +54,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     svc = sub.add_parser("install-service", help="Run in the background at boot (systemd on Linux/WSL, launchd on macOS).")
     svc.add_argument("--interval", type=int, default=120, metavar="SECONDS", help="Polling interval (default: 120).")
     sub.add_parser("uninstall-service", help="Stop and remove the background service.")
+    rc = sub.add_parser("recap", help="Send the recap of your GitLab activity now (with --dry-run: print it).")
+    rc.add_argument("period", choices=["week", "month"], nargs="?", default="week",
+                    help="Last complete week (default) or month.")
     return ap.parse_args(argv)
 
 
@@ -148,6 +151,14 @@ def main(argv: list[str] | None = None) -> None:
 
     if not gitlab:
         sys.exit("Set GITLAB_TOKEN (scope: read_api), or run `gitlab-slack-notifier init`.")
+    if args.command == "recap":
+        try:
+            msg = recap.message(gitlab, gitlab.current_user(), recap.previous(args.period, datetime.now().date()))
+            (print if args.dry_run else slack.post)(msg.text)
+        except ApiError as e:
+            sys.exit(str(e))
+        return
+
     yt_token = os.environ.get("YOUTRACK_TOKEN")
     notifier = Notifier(
         cfg,

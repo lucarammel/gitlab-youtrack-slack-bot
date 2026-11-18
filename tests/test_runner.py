@@ -37,6 +37,8 @@ class RunnerTest(unittest.TestCase):
 
     def notifier(self, now=MONDAY_NOON, **cfg):
         cfg.setdefault("morning_greeting", False)
+        cfg.setdefault("weekly_recap", False)
+        cfg.setdefault("monthly_recap", False)
         cfg.setdefault("batch_threshold", 0)
         c = make_config(**cfg)
         return Notifier(
@@ -179,6 +181,50 @@ class RunnerTest(unittest.TestCase):
         self.assertIn("Bonjour Lucas", self.slack.sent[0])
         self.assertIn("Old one", self.slack.sent[0])
         self.assertIn(":hourglass:", self.slack.sent[0])
+
+
+    def test_weekly_recap_sent_once_on_monday(self):
+        self.notifier().run_once()
+
+        def ev(day, action, target_type="MergeRequest", iid=1, project=10, **extra):
+            return {"created_at": f"2026-11-{day:02d}T10:00:00Z", "action_name": action,
+                    "target_type": target_type, "target_iid": iid, "project_id": project, **extra}
+
+        self.gl.events = [
+            ev(3, "opened", iid=1),
+            ev(4, "approved", iid=2),
+            ev(4, "approved", iid=2),  # same MR approved twice: one review
+            ev(5, "commented on", "DiffNote", note={"noteable_type": "MergeRequest"}),
+            ev(6, "pushed to", None, project=11, push_data={"commit_count": 3}),
+            ev(9, "pushed to", None, push_data={"commit_count": 50}),  # this week: excluded
+        ]
+        self.gl.recap_merged = [
+            mr(1, 1, title="Shipped", created_at="2026-11-03T10:00:00Z", merged_at="2026-11-05T10:00:00Z"),
+            mr(2, 2, title="Too old", created_at="2026-10-01T10:00:00Z", merged_at="2026-10-20T10:00:00Z"),
+        ]
+        self.notifier(weekly_recap=True).run_once()
+        self.notifier(weekly_recap=True).run_once()
+        self.assertEqual(len(self.slack.sent), 1)
+        msg = self.slack.sent[0]
+        self.assertIn("du 2 au 8 nov.", msg)
+        self.assertIn("1 MR mergée · délai moyen avant merge : 2,0 j", msg)
+        self.assertIn("Shipped", msg)
+        self.assertNotIn("Too old", msg)
+        self.assertIn("1 MR ouverte", msg)
+        self.assertIn("1 MR approuvée, 1 commentaire", msg)
+        self.assertIn("3 commits poussés", msg)
+        self.assertIn("4 jours d'activité", msg)
+        self.assertIn("proj10", msg)
+
+    def test_recap_api_failure_retried_next_poll(self):
+        self.notifier().run_once()
+        self.gl.events = [{"created_at": "2026-11-03T10:00:00Z", "action_name": "opened", "project_id": 10}]
+        self.gl.project = lambda pid: {}  # KeyError while formatting
+        self.notifier(weekly_recap=True).run_once()
+        self.assertEqual(self.slack.sent, [])
+        del self.gl.project
+        self.notifier(weekly_recap=True).run_once()
+        self.assertEqual(len(self.slack.sent), 1)
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 
 # Kinds that are always sent on their own and never held by quiet hours.
-SYSTEM_KINDS = frozenset({"morning", "connectivity"})
+SYSTEM_KINDS = frozenset({"morning", "recap", "connectivity"})
 
 
 @dataclass

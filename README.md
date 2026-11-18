@@ -13,6 +13,10 @@ Plus a morning greeting (once a day, first poll after `morning_hour`, weekdays) 
 is up, with a short summary: pending GitLab to-dos, MRs awaiting your review (oldest first, with their
 age and an :hourglass: past `stale_review_days`), your open MRs, your unresolved YouTrack issues.
 
+Plus a weekly (Monday) and monthly (1st of the month) recap of your GitLab activity: MRs merged (with
+the average time to merge) and opened, reviews (approvals, comments), commits pushed, active days and
+your most active repos. `gitlab-slack-notifier recap [week|month]` sends it on demand (`--dry-run` to print).
+
 Delivery features (see comments in `config.example.toml`):
 - **Quiet hours** (`quiet_hours = "19:00-08:30"`, `quiet_weekends`): notifications are held and
   delivered when the quiet period ends; `quiet_bypass` lets urgent kinds through.
@@ -58,6 +62,7 @@ Day-to-day:
 ```sh
 gitlab-slack-notifier --status          # last run, pending/held notifications, health
 gitlab-slack-notifier --flush           # deliver held notifications now, ignoring quiet hours
+gitlab-slack-notifier recap month       # activity recap of last month now (week by default, --dry-run to print)
 gitlab-slack-notifier init              # change tokens / projects (current values are the defaults)
 gitlab-slack-notifier install-service   # (re)install the background service
 gitlab-slack-notifier uninstall-service # stop it
@@ -132,6 +137,7 @@ gitlab_slack_notifier/
   filters.py                     # ignore rules
   health.py                      # connectivity alert / recovery
   morning.py                     # daily greeting
+  recap.py                       # weekly / monthly activity recap
   clients/                       # GitLab, YouTrack, Slack API clients
   http.py                        # JSON over urllib, retries, ApiError
 tests/                           # stdlib unittest, with fake clients
