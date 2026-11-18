@@ -156,6 +156,20 @@ class RunnerTest(unittest.TestCase):
         self.assertEqual(len(self.slack.sent), 1)
         self.assertIn("Merged", self.slack.sent[0])
 
+    def test_self_merge_of_my_mr_is_reported(self):
+        # auto-merge / merged by me: still notified, but my own approvals / comments aren't
+        self.notifier().run_once()
+        self.gl.merged_mrs = [mr(101, 8, author=ME, state="merged")]
+        self.gl.notes[8] = [
+            {"id": 9, "created_at": RECENT, "author": ME, "body": "approved this merge request", "system": True},
+            {"id": 10, "created_at": RECENT, "author": ME, "body": "merged", "system": True},
+        ]
+        self.notifier().run_once()
+        self.assertEqual(len(self.slack.sent), 1)
+        self.assertIn("Merged", self.slack.sent[0])
+        self.assertNotIn("Approved", self.slack.sent[0])
+        self.assertNotIn(" by ", self.slack.sent[0])
+
     def test_morning_greeting_lists_stale_reviews(self):
         self.notifier().run_once()
         self.gl.review_mrs = [mr(200, 9, title="Old one", created_at="2026-01-01T00:00:00Z")]

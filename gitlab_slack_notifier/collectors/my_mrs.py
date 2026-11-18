@@ -31,15 +31,19 @@ def collect(ctx: Context) -> list[Notification]:
             seen.add(n["id"])
             ctx.state.mark_seen(SEEN_KEY, [n["id"]])
             author = n["author"]
-            if author["id"] == me["id"]:
+            body = n.get("body", "")
+            by_me = author["id"] == me["id"]
+            # Your own actions are skipped, except merges: with auto-merge ("merge when pipeline
+            # succeeds") GitLab attributes the merge to you, and it happens while you're elsewhere.
+            if by_me and not (n.get("system") and body.startswith("merged")):
                 continue
             who = esc(author["name"])
-            body = n.get("body", "")
             if n.get("system"):
                 event = next((v for k, v in SYSTEM_EVENTS.items() if body.startswith(k)), None)
                 if event:
                     kind, label = event
-                    out.append(Notification(kind, f"*{label}* by {who}\n{mr_link}", author["username"], mr["title"], mr_link))
+                    text = f"*{label}*\n{mr_link}" if by_me else f"*{label}* by {who}\n{mr_link}"
+                    out.append(Notification(kind, text, author["username"], mr["title"], mr_link))
                 continue
             # Mentions already come through the to-do list.
             if mentions(body, me["username"]):

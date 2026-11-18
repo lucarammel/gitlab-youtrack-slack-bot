@@ -3,7 +3,7 @@
 Polls GitLab and posts to a Slack conversation when:
 - something lands in your GitLab To-Do list (mention, review request, assignment, failed pipeline, ...)
 - a new MR is opened on a watched project
-- someone comments on / approves / merges one of your MRs
+- someone comments on / approves / merges one of your MRs (merges are notified even when done by you, e.g. auto-merge)
 - someone replies in one of your threads on an MR you review (even without @-mentioning you)
 - the pipeline of one of your MRs finishes (green by default — "you can merge")
 - YouTrack (optional): you're mentioned or assigned, or an issue that concerns you gets a comment,
